@@ -1,0 +1,3588 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>{{MERCHANT_NAME}} · {{APP_NAME}}</title>
+  <style>
+    :root {
+      --apple-bg: #f5f5f7;
+      --apple-sheet: #ffffff;
+      --apple-sidebar: #fafafa;
+      --apple-text: #1d1d1f;
+      --apple-subtext: #86868b;
+      --apple-tertiary: #6e6e73;
+      --apple-border: rgba(0, 0, 0, 0.08);
+      --apple-border-subtle: #e5e5ea;
+      --apple-border-strong: rgba(0, 0, 0, 0.14);
+      --apple-blue: #0071e3;
+      --apple-green: #34c759;
+      --apple-green-wash: #f0fdf4;
+      --apple-amber: #ff9500;
+      --apple-amber-wash: #fffbeb;
+      --apple-red: #ff3b30;
+      --apple-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --apple-font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --apple-radius-sm: 8px;
+      --apple-radius-md: 14px;
+      --apple-radius-lg: 20px;
+      --apple-radius-pill: 980px;
+      --ypg-blue: var(--apple-blue);
+      --ypg-font: var(--apple-font);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    [hidden],
+    #paymentGatewayInterface[hidden],
+    #preGatewayAuthView[hidden] {
+      display: none !important;
+    }
+
+    html, body {
+      background-color: var(--apple-bg);
+      color: var(--apple-text);
+      font-family: var(--apple-font);
+      font-size: 14px;
+      line-height: 1.45;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      margin: 0;
+      overflow-x: hidden;
+      letter-spacing: -0.012em;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body.is-embedded {
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* --- APPLE PAY SHEET CONTAINER --- */
+    .ypg-wrapper {
+      width: 100%;
+      max-width: 860px;
+      min-height: 600px;
+      background: var(--apple-sheet);
+      border-radius: var(--apple-radius-lg);
+      border: 1px solid var(--apple-border);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: row;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @media (max-width: 768px) {
+      .ypg-wrapper {
+        max-width: 100vw;
+        min-height: 100vh;
+        min-height: 100dvh;
+        flex-direction: column;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+      }
+    }
+
+    /* Splash Screen */
+    .ypg-splash-screen {
+      position: absolute;
+      inset: 0;
+      background: #ffffff;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      gap: 14px;
+    }
+    .ypg-splash-screen.fade-out {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .ypg-splash-emblem {
+      width: 60px;
+      height: 60px;
+      border-radius: var(--apple-radius-md);
+      background: #000000;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .ypg-splash-title {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--apple-text);
+    }
+
+    /* Toast Notification */
+    .ypg-toast {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: rgba(29, 29, 31, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: #ffffff;
+      padding: 9px 18px;
+      border-radius: var(--apple-radius-pill);
+      font-size: 12.5px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 2000;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .ypg-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ========================================================
+       LEFT SIDEBAR: ORDER & PRICE RECEIPT
+       ======================================================== */
+    .ypg-pc-sidebar {
+      width: 310px;
+      flex-shrink: 0;
+      background: var(--apple-sidebar);
+      border-right: 1px solid var(--apple-border);
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    @media (max-width: 768px) {
+      .ypg-pc-sidebar {
+        width: 100%;
+        padding: 20px 20px 16px;
+        border-right: none;
+        border-bottom: 1px solid var(--apple-border);
+      }
+    }
+
+    .ypg-pc-brand-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .ypg-pc-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--apple-radius-md);
+      background: #000000;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      flex-shrink: 0;
+      overflow: hidden;
+      border: 1px solid var(--apple-border);
+    }
+    .ypg-pc-brand-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .ypg-pc-merchant-name {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--apple-text);
+      line-height: 1.25;
+    }
+    .ypg-pc-trust-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--apple-green);
+    }
+    .ypg-pc-green-shield {
+      width: 12px;
+      height: 12px;
+    }
+
+    /* Price Summary Card */
+    .ypg-pc-price-card {
+      background: #ffffff;
+      border-radius: var(--apple-radius-md);
+      border: 1px solid var(--apple-border);
+      padding: 16px 18px;
+      margin-bottom: 18px;
+    }
+    .ypg-pc-price-label {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--apple-subtext);
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+    .ypg-pc-price-val {
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--apple-text);
+      letter-spacing: -0.035em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+
+    /* Social Proof Strip */
+    .ypg-pc-social-proof {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--apple-tertiary);
+      padding: 10px 14px;
+      background: #ffffff;
+      border-radius: var(--apple-radius-sm);
+      border: 1px solid var(--apple-border);
+      margin-bottom: 14px;
+    }
+
+    /* Customer Identity Row */
+    .ypg-pc-row-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 14px;
+      background: #ffffff;
+      border-radius: var(--apple-radius-sm);
+      border: 1px solid var(--apple-border);
+      cursor: pointer;
+      font-size: 12.5px;
+      color: var(--apple-text);
+      transition: background 0.15s ease;
+    }
+    .ypg-pc-row-btn:hover {
+      background: #f0f0f2;
+    }
+    .ypg-pc-row-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ypg-pc-chevron {
+      color: var(--apple-subtext);
+      font-size: 14px;
+    }
+
+    /* Watermark Seal */
+    .ypg-pc-bags-wrap {
+      margin-top: auto;
+      padding-top: 18px;
+    }
+    .ypg-apple-security-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      color: var(--apple-subtext);
+      padding: 10px 12px;
+      border-radius: var(--apple-radius-sm);
+      background: rgba(0, 0, 0, 0.02);
+      border: 1px solid var(--apple-border);
+    }
+
+    /* ========================================================
+       RIGHT WORKSPACE: ACTIVE PAYMENT SHEET
+       ======================================================== */
+    .ypg-pc-workspace {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--apple-sheet);
+      min-width: 0;
+    }
+
+    /* Apple Top Bar */
+    .ypg-pc-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--apple-border);
+    }
+    @media (max-width: 768px) {
+      .ypg-pc-topbar {
+        padding: 14px 18px;
+      }
+    }
+    .ypg-pc-topbar-title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--apple-text);
+    }
+    .ypg-pc-topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+    }
+    .ypg-pc-btn-more,
+    .ypg-pc-btn-close {
+      background: #f5f5f7;
+      border: none;
+      color: var(--apple-text);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s ease;
+    }
+    .ypg-pc-btn-more:hover,
+    .ypg-pc-btn-close:hover {
+      background: #e5e5ea;
+    }
+
+    /* Mobile Header */
+    .ypg-header {
+      display: none;
+    }
+    @media (max-width: 768px) {
+      .ypg-header {
+        display: block;
+        padding: 12px 18px;
+        background: #ffffff;
+        border-bottom: 1px solid var(--apple-border);
+      }
+      .ypg-header-main-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .ypg-header-left-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .ypg-btn-back {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--apple-text);
+        display: flex;
+        align-items: center;
+      }
+      .ypg-merchant-avatar {
+        width: 34px;
+        height: 34px;
+        background: #000000;
+        color: #ffffff;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .ypg-merchant-text-group {
+        display: flex;
+        flex-direction: column;
+      }
+      .ypg-merchant-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--apple-text);
+      }
+      .ypg-trusted-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--apple-green);
+        font-weight: 500;
+      }
+      .ypg-green-shield {
+        width: 11px;
+        height: 11px;
+      }
+      .ypg-btn-profile {
+        background: #f5f5f7;
+        border: none;
+        color: var(--apple-text);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .ypg-header-subbanner { display: none; }
+    }
+
+    /* Scrollable Body */
+    .ypg-body {
+      flex: 1;
+      padding: 28px;
+      overflow-y: auto;
+    }
+    @media (max-width: 768px) {
+      .ypg-body {
+        padding: 20px 18px;
+      }
+    }
+
+    /* Page / Section Titles */
+    .ypg-page-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--apple-text);
+      margin-bottom: 4px;
+    }
+    .ypg-section-heading {
+      font-size: 13px;
+      color: var(--apple-subtext);
+    }
+    .ypg-section-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    /* Server Health Indicator */
+    .ypg-server-health-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--apple-radius-pill);
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+    .ypg-server-health-indicator.is-working {
+      background: var(--apple-green-wash);
+      color: var(--apple-green);
+    }
+    .ypg-server-health-indicator.is-busy {
+      background: var(--apple-amber-wash);
+      color: var(--apple-amber);
+    }
+    .ypg-server-health-indicator.is-issues {
+      background: #fef2f2;
+      color: var(--apple-red);
+    }
+    .ypg-pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Downtime Alert */
+    .ypg-downtime-alert {
+      display: flex;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--apple-amber-wash);
+      border-radius: var(--apple-radius-md);
+      margin-bottom: 18px;
+      border: 1px solid #fde68a;
+    }
+    .ypg-downtime-heading {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--apple-amber);
+      margin-bottom: 2px;
+    }
+    .ypg-downtime-msg {
+      font-size: 12px;
+      color: var(--apple-text);
+      line-height: 1.4;
+      margin-bottom: 6px;
+    }
+    .ypg-btn-downtime-alt {
+      background: var(--apple-amber);
+      color: #ffffff;
+      border: none;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: var(--apple-radius-pill);
+    }
+
+    /* Two Sub-Columns (Desktop) */
+    .ypg-pc-columns {
+      display: flex;
+      gap: 24px;
+    }
+    @media (max-width: 768px) {
+      .ypg-pc-columns {
+        flex-direction: column;
+        gap: 16px;
+      }
+    }
+    .ypg-pc-methods-list {
+      width: 190px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    @media (max-width: 768px) {
+      .ypg-pc-methods-list {
+        display: none;
+      }
+    }
+    .ypg-pc-method-card {
+      background: #f5f5f7;
+      border: 1.5px solid transparent;
+      border-radius: var(--apple-radius-md);
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .ypg-pc-method-card:hover {
+      background: #eaeaec;
+    }
+    .ypg-pc-method-card.is-active {
+      background: #ffffff;
+      border-color: var(--apple-blue);
+      box-shadow: 0 4px 12px rgba(0, 113, 227, 0.12);
+    }
+    .ypg-pc-method-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    .ypg-pc-method-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--apple-text);
+    }
+    .ypg-pc-method-sub {
+      font-size: 11.5px;
+      color: var(--apple-subtext);
+      line-height: 1.35;
+      margin-bottom: 6px;
+    }
+    .ypg-pc-method-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ypg-pc-mini-icon {
+      height: 13px;
+      width: auto;
+      object-fit: contain;
+    }
+    .ypg-pc-cash-pill {
+      font-size: 9.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      background: #e5e5ea;
+      color: var(--apple-tertiary);
+      border-radius: 4px;
+      margin-left: auto;
+    }
+
+    .ypg-pc-active-view {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Method Selector Tabs (Mobile) */
+    .ypg-method-selector-bar {
+      display: none;
+      background: #eeeeee;
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 18px;
+      gap: 3px;
+      overflow-x: auto;
+    }
+    .ypg-method-tab {
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--apple-text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .ypg-method-tab.active {
+      background: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Apple Countdown Pill */
+    .ypg-countdown-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f5f5f7;
+      padding: 4px 10px;
+      border-radius: var(--apple-radius-pill);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--apple-text);
+    }
+
+    /* QR Code Card Frame */
+    .ypg-qr-card-container {
+      background: #ffffff;
+      border-radius: var(--apple-radius-lg);
+      border: 1px solid var(--apple-border);
+      padding: 24px;
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+    }
+    @media (max-width: 600px) {
+      .ypg-qr-card-container {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+        gap: 16px;
+      }
+    }
+    .ypg-qr-image-box {
+      width: 190px;
+      height: 190px;
+      flex-shrink: 0;
+      background: #ffffff;
+      border-radius: var(--apple-radius-md);
+      border: 1px solid var(--apple-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+    .ypg-qr-image-box svg {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .ypg-qr-details-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ypg-qr-prompt-title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      color: var(--apple-text);
+    }
+    .ypg-upi-logos-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .ypg-app-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--apple-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      padding: 4px;
+    }
+    .ypg-app-icon img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    /* Verification Instructions Guide */
+    .ypg-instructions-card {
+      background: #f5f5f7;
+      border-radius: var(--apple-radius-md);
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+    .ypg-instruction-step {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      font-size: 12.5px;
+      color: var(--apple-tertiary);
+      line-height: 1.45;
+    }
+    .ypg-instruction-step:last-child {
+      margin-bottom: 0;
+    }
+    .ypg-step-num {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #1d1d1f;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* --- AUTH VIEW (APPLE ID STYLE SHEET) --- */
+    .ypg-auth-box {
+      background: #ffffff;
+      border-radius: var(--apple-radius-lg);
+      border: 1px solid var(--apple-border);
+      padding: 24px;
+      margin-top: 14px;
+    }
+    .ypg-auth-sub-desc {
+      font-size: 13px;
+      color: var(--apple-subtext);
+      margin-bottom: 20px;
+    }
+    .ypg-input-group {
+      margin-bottom: 16px;
+    }
+    .ypg-input-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--apple-subtext);
+      margin-bottom: 6px;
+    }
+    .ypg-phone-input-wrap {
+      display: flex;
+      background: #f5f5f7;
+      border-radius: var(--apple-radius-md);
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      overflow: hidden;
+    }
+    .ypg-phone-input-wrap:focus-within {
+      background: #ffffff;
+      border-color: var(--apple-blue);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+    }
+    .ypg-phone-prefix {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 14px;
+      background: #ebebee;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--apple-text);
+    }
+    .ypg-phone-control,
+    .ypg-input-control {
+      width: 100%;
+      border: none;
+      padding: 12px 14px;
+      font-family: var(--apple-font);
+      font-size: 15px;
+      color: var(--apple-text);
+      background: transparent;
+      outline: none;
+    }
+    .ypg-input-control {
+      background: #f5f5f7;
+      border-radius: var(--apple-radius-md);
+    }
+    .ypg-input-control:focus {
+      background: #ffffff;
+      border: 1px solid var(--apple-blue);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+    }
+    .ypg-otp-control {
+      letter-spacing: 0.35em;
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .ypg-btn-auth-action {
+      width: 100%;
+      background: #000000;
+      color: #ffffff;
+      border: none;
+      border-radius: var(--apple-radius-pill);
+      padding: 13px 20px;
+      font-family: var(--apple-font);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.15s ease, transform 0.1s ease;
+      margin-top: 12px;
+    }
+    .ypg-btn-auth-action:hover {
+      background: #1d1d1f;
+      transform: scale(1.006);
+    }
+    .ypg-btn-auth-action:active {
+      transform: scale(0.99);
+    }
+    .ypg-auth-badge-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #f5f5f7;
+      border-radius: var(--apple-radius-md);
+      font-size: 12.5px;
+      color: var(--apple-text);
+      margin-bottom: 14px;
+    }
+    .ypg-btn-link {
+      background: none;
+      border: none;
+      color: var(--apple-blue);
+      font-weight: 500;
+      font-size: 12.5px;
+      cursor: pointer;
+    }
+    .ypg-btn-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Saved Account */
+    .saved-account-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: var(--apple-radius-md);
+      background: #f5f5f7;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    /* Bottom Apple Action Bar */
+    .ypg-sticky-footer {
+      background: #ffffff;
+      border-top: 1px solid var(--apple-border);
+      padding: 14px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    @media (max-width: 768px) {
+      .ypg-sticky-footer {
+        padding: 12px 18px;
+      }
+    }
+    .ypg-legal-disclaimer {
+      font-size: 11px;
+      color: var(--apple-subtext);
+      text-align: center;
+    }
+    .ypg-action-bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .ypg-amount-view-group {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .ypg-bottom-price {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--apple-text);
+      font-variant-numeric: tabular-nums;
+    }
+    .ypg-btn-view-details {
+      background: none;
+      border: none;
+      font-size: 12px;
+      color: var(--apple-blue);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .ypg-btn-continue {
+      background: #000000;
+      color: #ffffff;
+      border: none;
+      border-radius: var(--apple-radius-pill);
+      padding: 10px 20px;
+      font-family: var(--apple-font);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .ypg-btn-continue:hover {
+      background: #1d1d1f;
+    }
+
+    /* Order Details Drawer */
+    .ypg-details-drawer {
+      display: none;
+      background: #f5f5f7;
+      border-radius: var(--apple-radius-md);
+      padding: 14px 16px;
+      margin-top: 8px;
+    }
+    .ypg-details-drawer.open {
+      display: block;
+    }
+    .ypg-details-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--apple-text);
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--apple-border);
+      padding-bottom: 6px;
+    }
+    .ypg-details-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--apple-subtext);
+      padding: 3px 0;
+    }
+    .ypg-details-row.total {
+      font-weight: 600;
+      color: var(--apple-text);
+      border-top: 1px solid var(--apple-border);
+      padding-top: 6px;
+      margin-top: 4px;
+    }
+
+    /* Modal Sheet Backdrop */
+    .rzp-sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 1500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .rzp-sheet-backdrop[hidden] {
+      display: none !important;
+    }
+    .rzp-sheet-dialog {
+      background: #ffffff;
+      border-radius: var(--apple-radius-xl);
+      border: 1px solid var(--apple-border);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+      max-width: 420px;
+      width: 100%;
+      padding: 32px 24px;
+      text-align: center;
+      position: relative;
+    }
+    .rzp-sheet-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--apple-text);
+      margin-bottom: 6px;
+    }
+    .rzp-sheet-subtitle {
+      font-size: 13px;
+      color: var(--apple-subtext);
+      line-height: 1.45;
+      margin-bottom: 20px;
+    }
+    .rzp-sheet-cancel-btn {
+      background: #f5f5f7;
+      border: none;
+      border-radius: var(--apple-radius-pill);
+      padding: 10px 20px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--apple-text);
+      cursor: pointer;
+      margin-top: 14px;
+    }
+    .rzp-btn-wait {
+      width: 100%;
+      background: #000000;
+      color: #ffffff;
+      border: none;
+      border-radius: var(--apple-radius-pill);
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 14px;
+      margin-bottom: 8px;
+    }
+    .rzp-btn-confirm-cancel {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--apple-red);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    /* Terminal Success / Expired Cards */
+    .ypg-success-box,
+    .ypg-expired-box,
+    .ypg-blocked-box,
+    .ypg-duplicate-box {
+      background: #ffffff;
+      border-radius: var(--apple-radius-xl);
+      padding: 36px 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .ypg-success-circle {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--apple-green-wash);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--apple-green);
+    }
+    .ypg-check-svg {
+      width: 28px;
+      height: 28px;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      fill: none;
+    }
+    .ypg-success-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--apple-text);
+    }
+    .ypg-success-amount {
+      font-size: 34px;
+      font-weight: 700;
+      color: var(--apple-text);
+      letter-spacing: -0.03em;
+    }
+    .btn-return-merchant {
+      background: #000000;
+      color: #ffffff;
+      padding: 12px 24px;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: var(--apple-radius-pill);
+      margin-top: 10px;
+      display: inline-block;
+    }
+
+    .ypg-expired-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #fffbeb;
+      color: var(--apple-amber);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ypg-expired-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--apple-text);
+    }
+    .ypg-expired-desc {
+      font-size: 13px;
+      color: var(--apple-subtext);
+      max-width: 360px;
+      line-height: 1.45;
+    }
+    .ypg-btn-expired-primary {
+      background: #000000;
+      color: #ffffff;
+      border: none;
+      border-radius: var(--apple-radius-pill);
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .ypg-btn-expired-secondary {
+      background: #f5f5f7;
+      border: none;
+      border-radius: var(--apple-radius-pill);
+      color: var(--apple-text);
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Modal Dialog */
+    .ypg-dialog-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 1600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .ypg-dialog-overlay[hidden] {
+      display: none !important;
+    }
+    .ypg-dialog-card {
+      background: #ffffff;
+      border-radius: var(--apple-radius-xl);
+      border: 1px solid var(--apple-border);
+      padding: 28px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+    }
+    .ypg-popover-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--apple-text);
+      cursor: pointer;
+      text-align: left;
+      border-radius: 6px;
+    }
+    .ypg-popover-item:hover {
+      background: #f5f5f7;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="ypgToast" class="ypg-toast"><img src="/icons/upi.svg" alt="UPI" style="height:12px; vertical-align:middle; filter:brightness(0) invert(1); margin-right:6px;" /> Connected to UPI banking observer</div>
+
+  <!-- APPLE CHECKOUT SHEET WRAPPER -->
+  <div class="ypg-wrapper">
+
+    <!-- 1. LOADING SPLASH -->
+    <div id="ypgSplashScreen" class="ypg-splash-screen">
+      <div class="ypg-splash-emblem">
+        <img id="splashBrandLogo" alt="Logo" style="display:none; max-width:44px; max-height:44px; object-fit:contain;" />
+        <span id="splashDefaultShield">C</span>
+      </div>
+      <div class="ypg-splash-title" id="splashSecuredByText">CouPI</div>
+    </div>
+
+    <!-- =======================================================
+         LEFT SIDEBAR (RECEIPT & ORDER SUMMARY)
+         ======================================================= -->
+    <aside class="ypg-pc-sidebar">
+      <div>
+        <!-- Merchant Brand Header -->
+        <div class="ypg-pc-brand-header">
+          <div class="ypg-pc-avatar" id="pcMerchantAvatarBox">
+            <span id="pcMerchantAvatarLetter">M</span>
+            <img id="pcMerchantAvatarImg" alt="Logo" style="display:none; width:100%; height:100%; object-fit:cover;" />
+          </div>
+          <div class="ypg-pc-brand-info">
+            <div class="ypg-pc-merchant-name" id="pcMerchantName">{{MERCHANT_NAME}}</div>
+            <div class="ypg-pc-trust-badge" id="pcTrustBadge">
+              <svg class="ypg-pc-green-shield" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-9-4z" fill="#34c759" />
+                <path d="M8.5 12l2.5 2.5 5-5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span id="pcTrustBadgeText">Verified Business</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Social Proof Audit Note -->
+        <div class="ypg-pc-social-proof" id="pcSocialProofWrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span id="pcSocialProofText">Verified direct banking connection</span>
+        </div>
+
+        <!-- Price Summary Card -->
+        <div class="ypg-pc-price-card">
+          <div class="ypg-pc-price-label">Total Payable</div>
+          <div class="ypg-pc-price-val" id="pcPriceSummaryAmount">₹{{AMOUNT}}</div>
+        </div>
+
+        <!-- Customer Identity Row -->
+        <div class="ypg-pc-row-btn" id="pcCustomerProfileRow" onclick="toggleAccountMenu(event)">
+          <div class="ypg-pc-row-left">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <span id="pcCustomerProfileText">Using as Guest User</span>
+          </div>
+          <span class="ypg-pc-chevron">&rsaquo;</span>
+        </div>
+      </div>
+
+      <!-- Watermark Security Strip -->
+      <div class="ypg-pc-bags-wrap">
+        <div class="ypg-apple-security-strip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          <span>256-Bit Encrypted Banking Socket</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- =======================================================
+         RIGHT WORKSPACE: ACTIVE PAYMENT SHEET
+         ======================================================= -->
+    <div class="ypg-pc-workspace">
+      <!-- TOP BAR -->
+      <div class="ypg-pc-topbar">
+        <div class="ypg-pc-topbar-title">Payment Options</div>
+        <div class="ypg-pc-topbar-actions">
+          <button type="button" class="ypg-pc-btn-more" id="btnPcMore" onclick="toggleAccountMenu(event)" title="Options">•••</button>
+          <button type="button" class="ypg-pc-btn-close" onclick="openCancelPaymentModal()" title="Close">✕</button>
+
+          <!-- Popover Menu -->
+          <div class="ypg-account-popover" id="accountMenuPopoverPc" hidden style="position: absolute; top: 40px; right: 0; background: #ffffff; border-radius: 14px; border: 1px solid var(--apple-border); box-shadow: 0 12px 32px rgba(0,0,0,0.12); padding: 6px; z-index: 1000; min-width: 200px;">
+            <div class="popoverCustomerName" id="popoverCustomerNamePc" style="padding: 6px 10px; font-weight: 600; font-size: 12px; border-bottom: 1px solid #f5f5f7;">Guest User</div>
+            <button type="button" class="ypg-popover-item" onclick="openHelpModal()">Support &amp; Audit</button>
+            <button type="button" class="ypg-popover-item" onclick="handleCustomerLogout()" style="color:var(--apple-red);">Sign Out</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOBILE HEADER -->
+      <header class="ypg-header">
+        <div class="ypg-header-main-row">
+          <div class="ypg-header-left-group">
+            <button type="button" class="ypg-btn-back" id="btnHeaderBack" onclick="cancelPayment()" title="Back">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div class="ypg-merchant-avatar" id="merchantAvatarBox">
+              <span id="merchantAvatarLetter">M</span>
+              <img id="merchantAvatarImg" alt="Logo" style="display:none; width:100%; height:100%; object-fit:cover;" />
+            </div>
+            <div class="ypg-merchant-text-group">
+              <div class="ypg-merchant-name" id="headerMerchantName">{{MERCHANT_NAME}}</div>
+              <div class="ypg-trusted-badge" id="headerTrustBadge">
+                <svg class="ypg-green-shield" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-9-4z" fill="#34c759" />
+                  <path d="M8.5 12l2.5 2.5 5-5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span id="headerTrustBadgeText">Verified Business</span>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="ypg-btn-profile" id="btnProfileMenu" onclick="toggleAccountMenu(event)" title="Profile">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </button>
+        </div>
+        <div class="ypg-header-subbanner" id="headerSubbanner" style="display:none;">
+          <span id="subbannerText">{{SIDEBAR_NOTICE}}</span>
+        </div>
+        <div class="ypg-account-popover" id="accountMenuPopover" hidden style="background:#ffffff; border-radius:12px; border:1px solid var(--apple-border); padding:6px; margin-top:8px;">
+          <div id="popoverCustomerName" style="padding:4px 8px; font-weight:600; font-size:12px;">Guest User</div>
+          <button type="button" class="ypg-popover-item" onclick="openHelpModal()">Support</button>
+          <button type="button" class="ypg-popover-item" onclick="handleCustomerLogout()" style="color:var(--apple-red);">Sign Out</button>
+        </div>
+      </header>
+
+      <!-- SCROLLABLE BODY -->
+      <main class="ypg-body">
+
+        <!-- PRE-GATEWAY AUTH VIEW -->
+        <div id="preGatewayAuthView" hidden>
+          <h2 class="ypg-page-title" id="authViewMainTitle">Sign in to Pay</h2>
+          <div class="ypg-auth-box">
+            <div class="ypg-auth-sub-desc" id="authViewSubTitle">Enter your 10-digit WhatsApp mobile number to continue</div>
+
+            <div class="ypg-saved-accs-wrapper" id="preAuthSavedAccountsContainer" hidden>
+              <div style="font-size:11px; font-weight:600; color:var(--apple-subtext); text-transform:uppercase; margin-bottom:8px;">Saved Account</div>
+              <div id="savedAccountsList"></div>
+            </div>
+
+            <!-- STEP 1: MOBILE -->
+            <div id="authStepMobile">
+              <div class="ypg-input-group">
+                <label class="ypg-input-label">WhatsApp Mobile Number</label>
+                <div class="ypg-phone-input-wrap">
+                  <div class="ypg-phone-prefix">
+                    <span>🇮🇳</span>
+                    <span>+91</span>
+                  </div>
+                  <input type="tel" class="ypg-phone-control" id="authMobileInput" placeholder="10-digit mobile number" maxlength="10" inputmode="numeric" />
+                </div>
+              </div>
+
+              <div style="font-size:12px; color:var(--apple-subtext); margin-bottom:14px; display:flex; align-items:center; gap:6px;">
+                <span>💬</span>
+                <span>We'll verify your mobile via WhatsApp OTP</span>
+              </div>
+
+              <button type="button" class="ypg-btn-auth-action" id="btnAuthContinue" onclick="handleAuthMobileSubmit()">
+                <span>Continue</span> &rsaquo;
+              </button>
+            </div>
+
+            <!-- STEP 2: SIGN UP -->
+            <div id="authStepSignup" hidden>
+              <div class="ypg-auth-badge-banner">
+                <div>
+                  <span>Mobile: </span>
+                  <strong id="authSignupPhoneBadge">+91 </strong>
+                </div>
+                <button type="button" class="ypg-btn-link" onclick="goToAuthStep('mobile')">Change</button>
+              </div>
+
+              <div style="font-size:13px; font-weight:600; color:var(--apple-text); margin-bottom:12px;">
+                New to COUPI PG? Please enter your name and email to proceed:
+              </div>
+
+              <div class="ypg-input-group">
+                <label class="ypg-input-label">Full Name</label>
+                <input type="text" class="ypg-input-control" id="authSignupName" placeholder="e.g. Aarav Sharma" />
+              </div>
+
+              <div class="ypg-input-group">
+                <label class="ypg-input-label">Email Address</label>
+                <input type="email" class="ypg-input-control" id="authSignupEmail" placeholder="e.g. aarav@example.com" />
+              </div>
+
+              <button type="button" class="ypg-btn-auth-action" id="btnAuthSignup" onclick="handleAuthSignupSubmit()">
+                <span>Sign Up &amp; Send WhatsApp OTP</span> &rsaquo;
+              </button>
+            </div>
+
+            <!-- STEP 3: OTP -->
+            <div id="authStepOtp" hidden>
+              <div class="ypg-auth-badge-banner">
+                <div>
+                  <span>Code sent to: </span>
+                  <strong id="authOtpPhoneBadge">+91 </strong>
+                </div>
+                <button type="button" class="ypg-btn-link" onclick="goToAuthStep('mobile')">Edit</button>
+              </div>
+
+              <div id="authOtpGreeting" style="font-size:13px; font-weight:600; color:var(--apple-text); margin-bottom:8px;">
+                Enter the 6-digit code sent to your phone:
+              </div>
+
+              <div class="ypg-input-group">
+                <input type="text" class="ypg-input-control ypg-otp-control" id="authOtpInput" placeholder="••••••" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" />
+              </div>
+
+              <button type="button" class="ypg-btn-auth-action" id="btnAuthVerifyOtp" onclick="handleAuthVerifyOtpSubmit()">
+                <span>Verify &amp; Continue to Pay</span> &rsaquo;
+              </button>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:12px; color:var(--apple-subtext);">
+                <div>
+                  Didn't receive code?
+                  <button type="button" class="ypg-btn-link" id="btnResendOtp" onclick="handleResendOtp()" style="margin-left:4px;">Resend OTP</button>
+                </div>
+                <span id="otpCountdownTimer" style="font-weight:600;"></span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- MAIN PAYMENT GATEWAY INTERFACE -->
+        <div id="paymentGatewayInterface" hidden>
+
+          <!-- MOBILE METHOD SELECTOR BAR -->
+          <div id="paymentMethodSelectorBar" class="ypg-method-selector-bar" style="display:{{METHOD_SELECTOR_DISPLAY}};">
+            <button type="button" class="ypg-method-tab active" id="tabMethodUpi" onclick="selectPaymentMethod('UPI')">
+              <img src="/icons/upi.svg" alt="UPI" style="height:12px;" />
+              <span>UPI QR</span>
+            </button>
+            <button type="button" class="ypg-method-tab" id="tabMethodCod" onclick="selectPaymentMethod('COD')" style="{{TAB_COD_STYLE}}">
+              <img src="/icons/cash.svg" alt="COD" style="height:12px; width:12px;" />
+              <span>Cash on Delivery</span>
+            </button>
+            <button type="button" class="ypg-method-tab" id="tabMethodCash" onclick="selectPaymentMethod('CASH_COUNTER')" style="{{TAB_CASH_STYLE}}">
+              <img src="/icons/cash.svg" alt="Cash" style="height:12px; width:12px;" />
+              <span>Cash</span>
+            </button>
+            <button type="button" class="ypg-method-tab" id="tabMethodCard" onclick="selectPaymentMethod('CARD_COUNTER')" style="{{TAB_CARD_STYLE}}">
+              <span>Card</span>
+            </button>
+          </div>
+
+          <!-- DESKTOP 2-COLUMN MODALITY WORKSPACE -->
+          <div class="ypg-pc-columns">
+            <div class="ypg-pc-methods-list" id="pcMethodsList">
+              <div class="ypg-pc-method-card is-active" id="pcMethodCardUpi" onclick="selectPaymentMethod('UPI')">
+                <div class="ypg-pc-method-header">
+                  <img src="/icons/upi.svg" alt="UPI" style="height:12px; margin-right:6px;" />
+                  <div class="ypg-pc-method-title">UPI QR</div>
+                </div>
+                <div class="ypg-pc-method-sub">Direct banking transfer</div>
+                <div class="ypg-pc-method-icons">
+                  <img class="ypg-pc-mini-icon" src="/icons/gpay.png" alt="GPay" />
+                  <img class="ypg-pc-mini-icon" src="/icons/phonepe.png" alt="PhonePe" />
+                  <img class="ypg-pc-mini-icon" src="/icons/paytm.png" alt="Paytm" />
+                </div>
+              </div>
+
+              <div class="ypg-pc-method-card" id="pcMethodCardCash" onclick="selectPaymentMethod('CASH_COUNTER')" style="{{PC_CASH_STYLE}}">
+                <div class="ypg-pc-method-header">
+                  <img src="/icons/cash.svg" alt="Cash" style="width:13px; height:13px; margin-right:6px;" />
+                  <div class="ypg-pc-method-title">Cash at Till</div>
+                  <span class="ypg-pc-cash-pill">Till</span>
+                </div>
+                <div class="ypg-pc-method-sub">Pay cash to cashier</div>
+              </div>
+
+              <div class="ypg-pc-method-card" id="pcMethodCardCard" onclick="selectPaymentMethod('CARD_COUNTER')" style="{{PC_CARD_STYLE}}">
+                <div class="ypg-pc-method-header">
+                  <div class="ypg-pc-method-title">Card at Counter</div>
+                  <span class="ypg-pc-cash-pill">POS</span>
+                </div>
+                <div class="ypg-pc-method-sub">Swipe or tap POS desk</div>
+              </div>
+
+              <div class="ypg-pc-method-card" id="pcMethodCardCod" onclick="selectPaymentMethod('COD')" style="{{PC_COD_STYLE}}">
+                <div class="ypg-pc-method-header">
+                  <img src="/icons/cash.svg" alt="COD" style="width:13px; height:13px; margin-right:6px;" />
+                  <div class="ypg-pc-method-title">Cash on Delivery</div>
+                  <span class="ypg-pc-cash-pill">COD</span>
+                </div>
+                <div class="ypg-pc-method-sub">Doorstep physical cash</div>
+              </div>
+            </div>
+
+            <!-- Active View -->
+            <div class="ypg-pc-active-view">
+              <!-- VIEW A: UPI QR INTERFACE -->
+              <div id="viewUpiContent">
+                <div class="ypg-section-label-row">
+                  <div>
+                    <h2 class="ypg-page-title" style="margin-bottom:2px;">Scan &amp; Pay via UPI</h2>
+                    <span class="ypg-section-heading">Pay with any installed UPI application</span>
+                  </div>
+                  <div class="ypg-countdown-pill" id="activeTimerBadge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span id="activeTimerText">05:00</span>
+                  </div>
+                </div>
+
+                <div class="ypg-server-health-indicator {{SERVER_HEALTH_CLASS}}" id="upiServerHealthIndicator">
+                  <span class="ypg-pulse-dot" id="serverPulseDot"></span>
+                  <span id="serverStatusLabel">{{SERVER_HEALTH_LABEL}}</span>
+                </div>
+
+                <div class="{{DOWNTIME_ALERT_CLASS}}" id="serverDowntimeAlert" style="display:{{DOWNTIME_ALERT_STYLE}};">
+                  <div>
+                    <div class="ypg-downtime-heading">{{DOWNTIME_HEADING}}</div>
+                    <div class="ypg-downtime-msg" id="serverDowntimeMsg">{{DOWNTIME_MSG}}</div>
+                    <button type="button" class="ypg-btn-downtime-alt" id="btnDowntimeCashAlt" onclick="switchMethodFromDowntime()" style="display:{{DOWNTIME_ALT_BTN_DISPLAY}};">
+                      {{DOWNTIME_ALT_BTN_LABEL}}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="ypg-qr-card-container">
+                  <div class="ypg-qr-image-box" id="qrImageContainer">
+                    <div style="font-size:12px; color:var(--apple-subtext);">Rendering QR...</div>
+                  </div>
+
+                  <div class="ypg-qr-details-col">
+                    <div class="ypg-qr-prompt-title">Scan using any UPI App</div>
+                    <div class="ypg-upi-logos-row">
+                      <div class="ypg-app-icon" title="Google Pay"><img src="/icons/gpay.png" alt="GPay" /></div>
+                      <div class="ypg-app-icon" title="PhonePe"><img src="/icons/phonepe.png" alt="PhonePe" /></div>
+                      <div class="ypg-app-icon" title="Paytm"><img src="/icons/paytm.png" alt="Paytm" /></div>
+                      <div class="ypg-app-icon" title="CRED"><img src="/icons/cred.png" alt="CRED" /></div>
+                      <div class="ypg-app-icon" title="BHIM"><img src="/icons/bhim.png" alt="BHIM" /></div>
+                    </div>
+                    <div style="font-size:12px; color:var(--apple-subtext); line-height:1.45;">
+                      Dynamic sub-rupee fraction attributes payment directly to your account.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ypg-instructions-card">
+                  <div class="ypg-instruction-step">
+                    <div class="ypg-step-num">1</div>
+                    <div>Open Google Pay, PhonePe, Paytm, or CRED on your phone.</div>
+                  </div>
+                  <div class="ypg-instruction-step">
+                    <div class="ypg-step-num">2</div>
+                    <div>Scan the QR code above and transfer exact sum of <strong>₹{{AMOUNT}}</strong>.</div>
+                  </div>
+                  <div class="ypg-instruction-step">
+                    <div class="ypg-step-num">3</div>
+                    <div>Confirmation is detected automatically via banking push socket.</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- VIEW COD -->
+              <div id="viewCodContent" hidden>
+                <div class="ypg-section-label-row">
+                  <h2 class="ypg-page-title">Cash on Delivery (COD)</h2>
+                  <div class="ypg-countdown-pill" id="codTimerBadge">
+                    <span id="codTimerText">05:00</span>
+                  </div>
+                </div>
+
+                <div style="background:#f5f5f7; border-radius:var(--apple-radius-md); padding:16px; margin-bottom:16px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <span style="font-size:12px; color:var(--apple-subtext);">Amount Payable on Delivery</span>
+                    <strong style="font-size:22px; color:var(--apple-text);">₹{{AMOUNT}}</strong>
+                  </div>
+                  <div style="font-size:12px; color:var(--apple-tertiary); border-top:1px solid rgba(0,0,0,0.06); padding-top:8px;">
+                    <div>Recipient: <strong id="codCustomerName">Customer</strong></div>
+                    <div>Contact: <span id="codCustomerPhone">-</span></div>
+                  </div>
+                </div>
+
+                <button type="button" class="ypg-btn-auth-action" id="btnConfirmCod" onclick="promptConfirmCodOrder()">
+                  <span>Confirm Cash on Delivery (₹{{AMOUNT}})</span> &rsaquo;
+                </button>
+              </div>
+
+              <!-- VIEW CASH (OFFLINE) -->
+              <div id="viewCashContent" hidden>
+                <h2 class="ypg-page-title">Pay with Cash at Till</h2>
+                <div style="background:#f5f5f7; border-radius:var(--apple-radius-md); padding:24px; text-align:center; margin:16px 0;">
+                  <div style="font-size:12px; font-weight:600; color:var(--apple-subtext); text-transform:uppercase; margin-bottom:4px;">Amount Payable to Cashier</div>
+                  <div style="font-size:36px; font-weight:700; color:var(--apple-text);">₹{{AMOUNT}}</div>
+                  <div style="margin-top:10px; font-size:13px; color:var(--apple-tertiary);">Order: <strong class="cashierOrderIdDisplay">#{{ORDER_ID}}</strong></div>
+                </div>
+                <div class="ypg-instructions-card">
+                  <p style="font-size:12px; color:var(--apple-tertiary); margin:0;" id="cashCounterDeskNotice">{{COUNTER_INSTRUCTIONS}}</p>
+                </div>
+              </div>
+
+              <!-- VIEW CARD (OFFLINE) -->
+              <div id="viewCardContent" hidden>
+                <h2 class="ypg-page-title">Pay with Card at Counter</h2>
+                <div style="background:#f5f5f7; border-radius:var(--apple-radius-md); padding:24px; text-align:center; margin:16px 0;">
+                  <div style="font-size:12px; font-weight:600; color:var(--apple-subtext); text-transform:uppercase; margin-bottom:4px;">POS Terminal Charge</div>
+                  <div style="font-size:36px; font-weight:700; color:var(--apple-text);">₹{{AMOUNT}}</div>
+                  <div style="margin-top:10px; font-size:13px; color:var(--apple-tertiary);">Order: <strong class="cashierOrderIdDisplay">#{{ORDER_ID}}</strong></div>
+                </div>
+                <div class="ypg-instructions-card">
+                  <p style="font-size:12px; color:var(--apple-tertiary); margin:0;" id="cardCounterDeskNotice">Please swipe or tap your card at the billing counter POS terminal.</p>
+                </div>
+              </div>
+
+              <!-- VIEW B: QUEUE VIEW -->
+              <div id="viewQueuedContent" hidden>
+                <div id="queueTimeSavingBanner" class="ypg-time-saving-banner" style="display:none;"></div>
+                <div style="background:#f5f5f7; border-radius:var(--apple-radius-md); padding:28px; text-align:center;">
+                  <div style="font-size:16px; font-weight:600; color:var(--apple-text);">Payment Slot Reserved</div>
+                  <div class="ypg-queue-number" id="queueNumberDisplay" style="font-size:36px; font-weight:700; color:var(--apple-text); margin:8px 0;">#1</div>
+                  <div style="font-size:12px; color:var(--apple-subtext);">Wait time: <span id="queueTimerText">00:30</span></div>
+                </div>
+              </div>
+
+              <!-- VIEW C: PROCESSING VIEW -->
+              <div id="viewProcessingContent" hidden>
+                <div style="background:#f5f5f7; border-radius:var(--apple-radius-lg); padding:36px 20px; text-align:center;">
+                  <div class="rzp-sheet-title">Verifying Payment</div>
+                  <div class="rzp-sheet-subtitle">Observing RFC 2177 banking push socket...</div>
+                  <div style="font-size:13px; font-weight:600; color:var(--apple-green); margin:16px 0;">
+                    Bank confirmation in progress (<span id="procTimerText">30s</span>)
+                  </div>
+                  <button type="button" class="rzp-sheet-cancel-btn" onclick="openCancelPaymentModal()">Cancel</button>
+                </div>
+              </div>
+
+              <!-- VIEW D: SUCCESS VIEW -->
+              <div id="viewSuccessContent" hidden>
+                <div class="ypg-success-box">
+                  <div class="ypg-success-circle" id="successIconCircle">
+                    <svg class="ypg-check-svg" viewBox="0 0 24 24">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                  <div class="ypg-success-title" id="successTitleText">Payment Successful!</div>
+                  <div class="ypg-success-amount" id="successAmountVal">₹{{AMOUNT}}</div>
+                  <div style="font-size:13px; color:var(--apple-subtext); max-width:360px;" id="successDescText">
+                    Payment automatically confirmed by CouPI banking observer.
+                  </div>
+                  <div id="successCodDevApiBox" style="display:none; font-family:var(--apple-font-mono); font-size:11px; background:#f5f5f7; padding:8px 12px; border-radius:8px;">
+                    <div id="successCodDevApiUrl"></div>
+                  </div>
+                  <a href="javascript:void(0)" class="btn-return-merchant" id="btnReturnStore">Return to Merchant</a>
+                </div>
+              </div>
+
+              <!-- VIEW E: EXPIRED / FAILED VIEW -->
+              <div id="viewFailedContent" hidden>
+                <div class="ypg-expired-box">
+                  <div class="ypg-expired-icon-wrap">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                  </div>
+                  <div class="ypg-expired-title" id="failedTitleText">Payment Session Expired</div>
+                  <div class="ypg-expired-desc" id="failedDescriptionText">
+                    The 5-minute active payment window elapsed before verification was completed.
+                  </div>
+                  <div style="display:flex; gap:10px; margin-top:8px;">
+                    <button type="button" class="ypg-btn-expired-primary" id="btnFailedAction" onclick="handleRetryNewPayment()">Try Again</button>
+                    <button type="button" class="ypg-btn-expired-secondary" onclick="openHelpModal()">Support</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- VIEW F: FRAUD / INVESTIGATION VIEW -->
+              <div id="viewBlockedContent" hidden>
+                <div class="ypg-blocked-box">
+                  <div class="ypg-blocked-title" id="blockedTitleText">Security Alert</div>
+                  <div class="ypg-blocked-subtitle" id="blockedSubtitleText">Session Suspended Pending Review</div>
+                  <p id="blockedNoticeText" style="font-size:13px; color:var(--apple-subtext);">
+                    Automated observer identified an anomalous attribution pattern. Transaction has been halted for review.
+                  </p>
+                  <div style="font-family:var(--apple-font-mono); font-size:11.5px; background:#f5f5f7; border-radius:8px; padding:10px 14px; text-align:left; width:100%; max-width:320px;">
+                    <div>Ref: <strong id="blockedOrderRefVal">-</strong></div>
+                    <div>Session: <span id="blockedSessionIdVal">-</span></div>
+                    <div>Recorded: <span id="blockedTimestampVal">-</span></div>
+                  </div>
+                  <button type="button" class="ypg-btn-expired-primary" onclick="handleBlockedExit()">Return to Merchant</button>
+                </div>
+              </div>
+
+              <!-- VIEW G: DUPLICATE SESSION DETECTED VIEW -->
+              <div id="viewDuplicateSessionContent" hidden>
+                <div class="ypg-duplicate-box">
+                  <div class="ypg-duplicate-title" id="dupSessionTitleText">Device Security Check</div>
+                  <div class="ypg-duplicate-subtitle" id="dupSessionSubtitleText">Payment Session Active on Another Device</div>
+                  <p style="font-size:13px; color:var(--apple-subtext);">For security, this session cannot be continued from this device.</p>
+                  <button type="button" class="ypg-btn-auth-action" id="btnEndAndRestartPayment" onclick="handleEndAndStartNewPayment()">
+                    <span>END SESSION &amp; START NEW PAYMENT</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+      <!-- STICKY FOOTER -->
+      <footer class="ypg-sticky-footer" id="ypgStickyFooter">
+        <div class="ypg-legal-disclaimer" id="footerLegalDisclaimer">
+          Secured by CouPI &bull; 256-Bit Bank Encryption &bull; <span style="text-decoration:underline; cursor:pointer;" onclick="openHelpModal()">Privacy Notice</span>
+        </div>
+
+        <div class="ypg-action-bottom-bar">
+          <div class="ypg-amount-view-group">
+            <div class="ypg-bottom-price" id="bottomAmountDisplay">₹{{AMOUNT}}</div>
+            <button type="button" class="ypg-btn-view-details" onclick="toggleOrderDetails()">
+              <span>View Details</span>
+              <span id="chevronDetailsIcon">&#9652;</span>
+            </button>
+          </div>
+
+          <button type="button" class="ypg-btn-continue" id="btnContinuePayment" onclick="submitPaymentDone()" style="display:none;">
+            Payment Done — Check My Payment
+          </button>
+        </div>
+
+        <!-- Order Breakdown Drawer -->
+        <div class="ypg-details-drawer" id="orderDetailsDrawer">
+          <div class="ypg-details-header">
+            <span>Order Summary</span>
+            <button type="button" onclick="toggleOrderDetails()" style="background:none; border:none; font-size:14px; cursor:pointer; color:var(--apple-subtext);">✕</button>
+          </div>
+          <div class="ypg-details-row">
+            <span>Order Reference</span>
+            <strong id="drawerOrderId">{{ORDER_ID}}</strong>
+          </div>
+          <div class="ypg-details-row">
+            <span>Merchant</span>
+            <strong>{{MERCHANT_NAME}}</strong>
+          </div>
+          <div class="ypg-details-row">
+            <span>Platform Fee</span>
+            <span style="color:var(--apple-green); font-weight:600;">₹0.00 (Zero Fee)</span>
+          </div>
+          <div class="ypg-details-row total">
+            <span>Total</span>
+            <strong id="drawerTotalAmount">₹{{AMOUNT}}</strong>
+          </div>
+        </div>
+      </footer>
+
+    </div><!-- END ypg-pc-workspace -->
+
+    <!-- HELP MODAL -->
+    <div class="ypg-dialog-overlay" id="helpModal" hidden>
+      <div class="ypg-dialog-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <strong style="font-size:15px; font-weight:600;" id="helpModalTitle">Help &amp; Support</strong>
+          <button type="button" onclick="closeHelpModal()" style="background:none; border:none; font-size:16px; cursor:pointer; color:var(--apple-subtext);">✕</button>
+        </div>
+        <div style="font-size:12px; color:var(--apple-subtext); margin-bottom:10px;">For inquiries regarding your payment:</div>
+        <div id="helpModalEmailsContainer" style="margin-bottom:6px; font-size:12px;"></div>
+        <div id="helpModalMobilesContainer" style="margin-bottom:10px; font-size:12px;"></div>
+        <div id="helpModalLegalLinks" style="display:none; gap:12px; font-size:11px; margin-bottom:10px;"></div>
+        <div style="font-size:11px; font-weight:600; color:var(--apple-subtext); text-transform:uppercase; margin-bottom:4px;">Case Details</div>
+        <pre id="helpModalCaseInfoText" style="background:#f5f5f7; border-radius:8px; padding:8px; font-family:var(--apple-font-mono); font-size:11px; margin-bottom:14px; white-space:pre-wrap;"></pre>
+        <button type="button" class="ypg-btn-auth-action" onclick="copyCaseInfo()">
+          <span id="copyCaseText">Copy Details</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- CONFLICT MODAL -->
+    <div class="ypg-dialog-overlay" id="activeConflictModal" hidden>
+      <div class="ypg-dialog-card" style="text-align:center;">
+        <strong style="font-size:16px; font-weight:600; display:block; margin-bottom:6px;" id="conflictModalTitle">Active Session Detected</strong>
+        <p style="font-size:13px; color:var(--apple-subtext); margin-bottom:16px;" id="conflictModalDesc">
+          You already have an active payment session.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button type="button" class="ypg-btn-auth-action" id="btnContinueExistingActive" onclick="continueExistingActivePayment()">
+            CONTINUE ACTIVE SESSION
+          </button>
+          <button type="button" class="ypg-btn-expired-secondary" id="btnEndSessionAndStartNew" onclick="executeRetryNewPayment()">
+            END SESSION &amp; START NEW PAYMENT
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROCESSING MODAL -->
+    <div class="rzp-sheet-backdrop" id="rzpProcessingModal" hidden>
+      <div class="rzp-sheet-dialog">
+        <button type="button" onclick="closeProcessingModal()" style="position:absolute; top:14px; right:14px; background:none; border:none; font-size:16px; cursor:pointer; color:var(--apple-subtext);">✕</button>
+        <div class="rzp-sheet-title" id="rzpProcessingTitle">Verifying Payment</div>
+        <div class="rzp-sheet-subtitle" id="rzpProcessingSubtitle">Observing banking push socket...</div>
+        <div style="font-size:12.5px; font-weight:600; color:var(--apple-green); margin:12px 0;">
+          Checking transaction...
+        </div>
+        <button type="button" class="rzp-sheet-cancel-btn" onclick="openCancelPaymentModal()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- CANCEL PAYMENT MODAL -->
+    <div class="rzp-sheet-backdrop" id="rzpCancelModal" hidden>
+      <div class="rzp-sheet-dialog">
+        <div id="rzpCancelPromptView">
+          <div class="rzp-sheet-title">Cancel Payment?</div>
+          <div class="rzp-sheet-subtitle">
+            You will be returned to <span class="cancelMerchantNameSpan">{{MERCHANT_NAME}}</span>.
+          </div>
+          <button type="button" class="rzp-btn-wait" onclick="closeCancelPaymentModal()">No, Continue</button>
+          <button type="button" class="rzp-btn-confirm-cancel" onclick="confirmCancelPayment()">Yes, Cancel</button>
+        </div>
+        <div id="rzpCancellingProgressView" style="display:none;">
+          <div class="rzp-sheet-title">Cancelling Payment</div>
+          <div class="rzp-sheet-subtitle">Releasing session slot...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script id="ypgInitialState" type="application/json">{{INITIAL_STATE_JSON}}</script>
+  <script>
+    const PAYMENT_ID = "{{PAYMENT_ID}}";
+    const API_BASE = "{{API_BASE_URL}}";
+
+    let state = null;
+    let countdownTimer = null;
+    let queuePollTimer = null;
+    let sse = null;
+    let activeCustomer = null;
+    let activeToken = null;
+
+    const STORAGE_KEY_IDENTITY = 'coupi.customer.identity';
+    const STORAGE_KEY_ACCOUNTS = 'coupi.customer.accounts';
+    const STORAGE_KEY_ACTIVE = 'coupi.customer.activeId';
+    const MAX_IDENTITY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+    function getPreservedIdentity() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_IDENTITY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (!data || !data.customer) {
+          clearPreservedIdentity();
+          return null;
+        }
+        const now = Date.now();
+        const expiry = data.expiresAt || ((data.savedAt || now) + MAX_IDENTITY_AGE_MS);
+        if (now > expiry) {
+          clearPreservedIdentity();
+          return null;
+        }
+        return data;
+      } catch {
+        return null;
+      }
+    }
+
+    function savePreservedIdentity(cust, token) {
+      if (!cust || !cust.id) return;
+      try {
+        const now = Date.now();
+        const cleanCust = {
+          id: cust.id,
+          name: cust.name || cust.fullName || 'Customer',
+          email: cust.email || '',
+          mobileNumber: cust.mobileNumber || cust.phoneNumber || '',
+          status: cust.status || 'ACTIVE'
+        };
+        const resolvedToken = token || activeToken || localStorage.getItem('ypg_customer_token') || null;
+        const payload = {
+          customer: cleanCust,
+          token: resolvedToken,
+          savedAt: now,
+          expiresAt: now + MAX_IDENTITY_AGE_MS
+        };
+        localStorage.setItem(STORAGE_KEY_IDENTITY, JSON.stringify(payload));
+        localStorage.setItem(STORAGE_KEY_ACCOUNTS, JSON.stringify([cleanCust]));
+        localStorage.setItem(STORAGE_KEY_ACTIVE, cust.id);
+        if (resolvedToken) {
+          localStorage.setItem('ypg_customer_token', resolvedToken);
+        }
+      } catch { }
+    }
+
+    function clearPreservedIdentity() {
+      try {
+        localStorage.removeItem(STORAGE_KEY_IDENTITY);
+        localStorage.removeItem(STORAGE_KEY_ACCOUNTS);
+        localStorage.removeItem(STORAGE_KEY_ACTIVE);
+        localStorage.removeItem('ypg_customer_token');
+      } catch { }
+    }
+
+    const initPreserved = getPreservedIdentity();
+    if (initPreserved && initPreserved.customer) {
+      activeCustomer = initPreserved.customer;
+      activeToken = initPreserved.token || null;
+    }
+
+    if (window.parent !== window || location.search.includes('embedded=1')) {
+      document.body.classList.add('is-embedded');
+      try {
+        window.parent.postMessage({ event: 'coupi.modal_ready', paymentId: PAYMENT_ID }, '*');
+      } catch (e) { }
+    }
+
+    function dismissSplashScreen() {
+      const splash = document.getElementById('ypgSplashScreen');
+      if (splash && !splash.classList.contains('fade-out')) {
+        setTimeout(() => {
+          splash.classList.add('fade-out');
+        }, 400);
+      }
+    }
+
+    let toastTimer = null;
+    function showOptionToast(msg) {
+      const toast = document.getElementById('ypgToast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    function toggleOrderDetails() {
+      const drawer = document.getElementById('orderDetailsDrawer');
+      const chevron = document.getElementById('chevronDetailsIcon');
+      if (!drawer) return;
+      const isOpen = drawer.classList.contains('open');
+      if (isOpen) {
+        drawer.classList.remove('open');
+        if (chevron) chevron.innerHTML = '&#9652;';
+      } else {
+        drawer.classList.add('open');
+        if (chevron) chevron.innerHTML = '&#9662;';
+      }
+    }
+
+    function getFailedRedirectUrl() {
+      const orderId = state?.orderId || '';
+      const reason = state?.status || 'FAILED';
+      const paymentId = typeof PAYMENT_ID !== 'undefined' ? PAYMENT_ID : (state?.id || '');
+
+      let baseOrigin = '';
+      if (state && state.returnUrl) {
+        try { baseOrigin = new URL(state.returnUrl).origin; } catch (e) { }
+      }
+      if (!baseOrigin && document.referrer) {
+        try { baseOrigin = new URL(document.referrer).origin; } catch (e) { }
+      }
+
+      const query = `orderId=${encodeURIComponent(orderId)}&reason=${encodeURIComponent(reason)}&paymentId=${encodeURIComponent(paymentId)}`;
+      return baseOrigin ? `${baseOrigin}/order-failed?${query}` : `/order-failed?${query}`;
+    }
+
+    function getStoreReturnUrl() {
+      if (typeof state !== 'undefined' && state) {
+        if (state.cancelUrl) return state.cancelUrl;
+        if (state.returnUrl) {
+          try {
+            const parsed = new URL(state.returnUrl);
+            return parsed.origin ? `${parsed.origin}/` : state.returnUrl;
+          } catch (e) { }
+        }
+      }
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const cancelParam = params.get('cancelUrl') || params.get('cancel_url');
+        if (cancelParam) return cancelParam;
+        const qUrl = params.get('returnUrl') || params.get('storeUrl') || params.get('redirectUrl');
+        if (qUrl) {
+          const parsed = new URL(qUrl, window.location.origin);
+          return parsed.origin ? `${parsed.origin}/` : qUrl;
+        }
+      } catch (e) { }
+      if (document.referrer) {
+        try {
+          const refUrl = new URL(document.referrer);
+          if (refUrl.host !== window.location.host) return `${refUrl.origin}/`;
+        } catch (e) { }
+      }
+      if (window.location.port === '7000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:5000/';
+      }
+      return '/';
+    }
+
+    function handleRetryNewPayment() {
+      const failRedirectUrl = getFailedRedirectUrl();
+      const orderId = state?.orderId || '';
+      const reason = state?.status || 'FAILED';
+      const paymentId = typeof PAYMENT_ID !== 'undefined' ? PAYMENT_ID : (state?.id || '');
+      const isEmbedded = (window.parent !== window) || location.search.includes('embedded=1');
+
+      if (isEmbedded) {
+        try {
+          window.parent.postMessage({
+            event: 'coupi.payment_failed',
+            data: { orderId, reason, paymentId, status: reason, redirectUrl: failRedirectUrl },
+            orderId, reason, paymentId, status: reason, redirectUrl: failRedirectUrl
+          }, '*');
+          window.parent.postMessage({
+            event: 'coupi.modal_close',
+            action: 'payment_failed',
+            redirectUrl: failRedirectUrl
+          }, '*');
+        } catch (e) { }
+      } else {
+        window.location.href = failRedirectUrl;
+      }
+    }
+
+    function emitTriggerHook(action, details = {}) {
+      try {
+        window.parent.postMessage({
+          type: 'COUPI_PAYMENT_HOOK',
+          action,
+          paymentId: PAYMENT_ID,
+          orderId: state?.orderId,
+          details
+        }, '*');
+      } catch { }
+
+      fetch(`${API_BASE}/api/v1/checkout/${PAYMENT_ID}/trigger-hook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, details })
+      }).catch(() => { });
+    }
+
+    function getRememberedAccounts() {
+      try {
+        const preserved = getPreservedIdentity();
+        if (preserved && preserved.customer) return [preserved.customer];
+        const raw = localStorage.getItem(STORAGE_KEY_ACCOUNTS);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed) || parsed.length === 0) return [];
+        return [parsed[0]];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveRememberedAccount(cust, token) {
+      if (!cust || !cust.id) return;
+      savePreservedIdentity(cust, token);
+    }
+
+    function removeRememberedAccount(customerId, e) {
+      if (e) { e.stopPropagation(); e.preventDefault(); }
+      clearPreservedIdentity();
+      if (activeCustomer && activeCustomer.id === customerId) {
+        activeCustomer = null;
+        activeToken = null;
+      }
+      updateCustomerDisplay(null);
+      renderSavedAccountsUI();
+    }
+
+    function renderSavedAccountsUI() {
+      const accounts = getRememberedAccounts();
+      const container = document.getElementById('preAuthSavedAccountsContainer');
+      const listEl = document.getElementById('savedAccountsList');
+
+      if (container && listEl) {
+        if (accounts.length > 0) {
+          container.hidden = false;
+          let html = '';
+          accounts.slice(0, 1).forEach(acc => {
+            const initial = (acc.name || 'U').charAt(0).toUpperCase();
+            html += `
+              <div class="saved-account-row" onclick="handleSelectSavedAccount('${acc.id}', event)">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="width:28px; height:28px; border-radius:50%; background:#e5e5ea; color:#1d1d1f; font-weight:600; font-size:12px; display:flex; align-items:center; justify-content:center;">${initial}</div>
+                  <div>
+                    <div style="font-size:13px; font-weight:600;">${escapeHtml(acc.name)}</div>
+                    <div style="font-size:11px; color:var(--apple-subtext);">${acc.mobileNumber ? '+91 ' + escapeHtml(acc.mobileNumber) : ''}</div>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <button type="button" class="ypg-btn-link" style="font-size:12px;" onclick="handleSelectSavedAccount('${acc.id}', event)">Select</button>
+                  <button type="button" style="background:none; border:none; color:var(--apple-subtext); font-size:13px; cursor:pointer;" onclick="removeRememberedAccount('${acc.id}', event)" title="Remove">✕</button>
+                </div>
+              </div>
+            `;
+          });
+          listEl.innerHTML = html;
+        } else {
+          container.hidden = true;
+          listEl.innerHTML = '';
+        }
+      }
+    }
+
+    let currentAuthMobile = '';
+    let currentAuthName = '';
+    let currentAuthEmail = '';
+    let currentAuthStep = 'mobile';
+    let otpCooldownTimer = null;
+    let otpCooldownSec = 0;
+
+    function setGatewayAuthMode(isAuthView) {
+      const authEl = document.getElementById('preGatewayAuthView');
+      const payEl = document.getElementById('paymentGatewayInterface');
+      const footerEl = document.getElementById('ypgStickyFooter');
+      const pcTopbarTitle = document.querySelector('.ypg-pc-topbar-title');
+
+      if (isAuthView) {
+        if (authEl) { authEl.hidden = false; authEl.style.removeProperty('display'); }
+        if (payEl) { payEl.hidden = true; payEl.style.setProperty('display', 'none', 'important'); }
+        if (footerEl) footerEl.style.display = 'none';
+        if (pcTopbarTitle) pcTopbarTitle.textContent = 'Sign in to Pay';
+      } else {
+        if (authEl) { authEl.hidden = true; authEl.style.setProperty('display', 'none', 'important'); }
+        if (payEl) { payEl.hidden = false; payEl.style.removeProperty('display'); }
+        if (footerEl) footerEl.style.display = '';
+        if (pcTopbarTitle) pcTopbarTitle.textContent = 'Payment Options';
+      }
+    }
+
+    function goToAuthStep(step) {
+      currentAuthStep = step;
+      const stepMobile = document.getElementById('authStepMobile');
+      const stepSignup = document.getElementById('authStepSignup');
+      const stepOtp = document.getElementById('authStepOtp');
+      const title = document.getElementById('authViewMainTitle');
+      const subtitle = document.getElementById('authViewSubTitle');
+      const savedAccountsBox = document.getElementById('preAuthSavedAccountsContainer');
+
+      if (step === 'mobile') {
+        if (stepMobile) stepMobile.hidden = false;
+        if (stepSignup) stepSignup.hidden = true;
+        if (stepOtp) stepOtp.hidden = true;
+        if (savedAccountsBox && getRememberedAccounts().length > 0) savedAccountsBox.hidden = false;
+        if (title) title.innerText = 'Sign in to Pay';
+        if (subtitle) subtitle.innerText = 'Enter your 10-digit WhatsApp mobile number to continue';
+        const input = document.getElementById('authMobileInput');
+        if (input) {
+          if (currentAuthMobile && !input.value) input.value = currentAuthMobile;
+          if (document.activeElement !== input) setTimeout(() => input.focus(), 50);
+        }
+      } else if (step === 'signup') {
+        if (stepMobile) stepMobile.hidden = true;
+        if (stepSignup) stepSignup.hidden = false;
+        if (stepOtp) stepOtp.hidden = true;
+        if (savedAccountsBox) savedAccountsBox.hidden = true;
+        if (title) title.innerText = 'Create Account';
+        if (subtitle) subtitle.innerText = 'Complete your profile to proceed with instant checkout';
+        const badge = document.getElementById('authSignupPhoneBadge');
+        if (badge) badge.innerText = '+91 ' + currentAuthMobile;
+        const nameInput = document.getElementById('authSignupName');
+        const emailInput = document.getElementById('authSignupEmail');
+        if (nameInput && currentAuthName && !nameInput.value) nameInput.value = currentAuthName;
+        if (emailInput && currentAuthEmail && !emailInput.value) emailInput.value = currentAuthEmail;
+        if (nameInput) setTimeout(() => nameInput.focus(), 50);
+      } else if (step === 'otp') {
+        if (stepMobile) stepMobile.hidden = true;
+        if (stepSignup) stepSignup.hidden = true;
+        if (stepOtp) stepOtp.hidden = false;
+        if (savedAccountsBox) savedAccountsBox.hidden = true;
+        if (title) title.innerText = 'Verify Mobile OTP';
+        if (subtitle) subtitle.innerText = 'Enter the 6-digit code sent to your WhatsApp number';
+        const badge = document.getElementById('authOtpPhoneBadge');
+        if (badge) badge.innerText = '+91 ' + currentAuthMobile;
+        const otpInput = document.getElementById('authOtpInput');
+        if (otpInput) {
+          otpInput.value = '';
+          setTimeout(() => otpInput.focus(), 50);
+        }
+        startOtpCooldown(30);
+      }
+    }
+
+    function startOtpCooldown(sec = 30) {
+      clearInterval(otpCooldownTimer);
+      otpCooldownSec = sec;
+      const resendBtn = document.getElementById('btnResendOtp');
+      const countdownEl = document.getElementById('otpCountdownTimer');
+
+      const updateUI = () => {
+        if (otpCooldownSec > 0) {
+          if (resendBtn) { resendBtn.disabled = true; resendBtn.style.opacity = '0.5'; }
+          if (countdownEl) countdownEl.innerText = `(${otpCooldownSec}s)`;
+          otpCooldownSec--;
+        } else {
+          clearInterval(otpCooldownTimer);
+          if (resendBtn) { resendBtn.disabled = false; resendBtn.style.opacity = '1'; }
+          if (countdownEl) countdownEl.innerText = '';
+        }
+      };
+      updateUI();
+      otpCooldownTimer = setInterval(updateUI, 1000);
+    }
+
+    async function handleAuthMobileSubmit() {
+      const input = document.getElementById('authMobileInput');
+      const btn = document.getElementById('btnAuthContinue');
+      const raw = input ? input.value : '';
+      const clean = String(raw).replace(/\D/g, '').slice(-10);
+
+      if (!clean || clean.length !== 10) {
+        showOptionToast('Please enter a valid 10-digit mobile number');
+        input?.focus();
+        return;
+      }
+
+      currentAuthMobile = clean;
+      const oldHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>Checking account...</span>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/customer/check-user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mobileNumber: clean })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showOptionToast(data.error || 'Failed to check mobile number');
+          return;
+        }
+
+        const accounts = getRememberedAccounts();
+        const savedMatch = accounts.find(a => String(a.mobileNumber || '').replace(/\D/g, '').slice(-10) === clean);
+
+        if (data.exists && data.customer) {
+          currentAuthName = data.customer.name;
+          currentAuthEmail = data.customer.email;
+          btn.innerHTML = '<span>Sending WhatsApp OTP...</span>';
+
+          await fetch(`${API_BASE}/api/v1/customer/send-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mobileNumber: clean })
+          });
+
+          const greetingEl = document.getElementById('authOtpGreeting');
+          if (greetingEl) {
+            greetingEl.innerHTML = `Welcome back, <strong>${escapeHtml(data.customer.name)}</strong>! Enter the 6-digit WhatsApp OTP:`;
+          }
+          goToAuthStep('otp');
+          showOptionToast('OTP sent to your WhatsApp number!');
+        } else if (savedMatch) {
+          currentAuthName = savedMatch.name || 'Customer';
+          currentAuthEmail = savedMatch.email || '';
+          btn.innerHTML = '<span>Sending WhatsApp OTP...</span>';
+
+          await fetch(`${API_BASE}/api/v1/customer/send-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mobileNumber: clean, name: currentAuthName, email: currentAuthEmail })
+          });
+
+          const greetingEl = document.getElementById('authOtpGreeting');
+          if (greetingEl) {
+            greetingEl.innerHTML = `Welcome back, <strong>${escapeHtml(currentAuthName)}</strong>! Enter the 6-digit WhatsApp OTP:`;
+          }
+          goToAuthStep('otp');
+          showOptionToast('OTP sent to your WhatsApp number!');
+        } else {
+          goToAuthStep('signup');
+        }
+      } catch (e) {
+        showOptionToast('Network error checking mobile number.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+      }
+    }
+
+    async function handleAuthSignupSubmit() {
+      const nameInput = document.getElementById('authSignupName');
+      const emailInput = document.getElementById('authSignupEmail');
+      const btn = document.getElementById('btnAuthSignup');
+
+      const name = nameInput ? nameInput.value.trim() : '';
+      const email = emailInput ? emailInput.value.trim() : '';
+
+      if (!name) {
+        showOptionToast('Please enter your full name');
+        nameInput?.focus();
+        return;
+      }
+      if (!email || !email.includes('@') || !email.includes('.')) {
+        showOptionToast('Please enter a valid email address');
+        emailInput?.focus();
+        return;
+      }
+
+      currentAuthName = name;
+      currentAuthEmail = email;
+
+      const oldHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>Sending WhatsApp OTP...</span>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/customer/send-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mobileNumber: currentAuthMobile,
+            name,
+            email,
+            isNewUser: true
+          })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          const greetingEl = document.getElementById('authOtpGreeting');
+          if (greetingEl) {
+            greetingEl.innerHTML = `Hello <strong>${escapeHtml(name)}</strong>! Enter the 6-digit WhatsApp OTP:`;
+          }
+          goToAuthStep('otp');
+          showOptionToast('WhatsApp verification code sent!');
+        } else {
+          showOptionToast(data.error || 'Failed to send WhatsApp OTP.');
+        }
+      } catch (e) {
+        showOptionToast('Network error sending WhatsApp OTP.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+      }
+    }
+
+    async function handleAuthVerifyOtpSubmit() {
+      const otpInput = document.getElementById('authOtpInput');
+      const btn = document.getElementById('btnAuthVerifyOtp');
+      const otp = otpInput ? otpInput.value.trim() : '';
+
+      if (!otp || otp.length < 6) {
+        showOptionToast('Please enter the 6-digit WhatsApp OTP');
+        otpInput?.focus();
+        return;
+      }
+
+      const oldHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>Verifying OTP...</span>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/customer/verify-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mobileNumber: currentAuthMobile,
+            otp,
+            name: currentAuthName,
+            email: currentAuthEmail
+          })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.customer) {
+          activeCustomer = data.customer;
+          activeToken = data.token;
+          saveRememberedAccount(activeCustomer, activeToken);
+
+          await fetch(`${API_BASE}/api/v1/checkout/${PAYMENT_ID}/bind-customer`, {
+            method: 'POST',
+            headers: getApiHeaders({
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${activeToken}`
+            }),
+            body: JSON.stringify({ token: activeToken, customerId: activeCustomer.id })
+          });
+
+          emitTriggerHook('AUTH_COMPLETED', { customerId: activeCustomer.id });
+          setGatewayAuthMode(false);
+          updateCustomerDisplay(activeCustomer);
+          loadState();
+          showOptionToast(`Welcome, ${activeCustomer.name}! Verified via WhatsApp.`);
+        } else {
+          showOptionToast(data.error || 'Invalid or expired OTP. Please try again.');
+          otpInput.select();
+        }
+      } catch (e) {
+        showOptionToast('Network error verifying OTP.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+      }
+    }
+
+    async function handleResendOtp() {
+      if (otpCooldownSec > 0) return;
+      showOptionToast('Resending WhatsApp OTP...');
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/customer/send-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mobileNumber: currentAuthMobile,
+            name: currentAuthName,
+            email: currentAuthEmail
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          startOtpCooldown(30);
+          showOptionToast('Fresh OTP dispatched to your WhatsApp number!');
+          const otpInput = document.getElementById('authOtpInput');
+          if (otpInput) { otpInput.value = ''; otpInput.focus(); }
+        } else {
+          showOptionToast(data.error || 'Failed to resend OTP.');
+        }
+      } catch (e) {
+        showOptionToast('Network error resending OTP.');
+      }
+    }
+
+    async function handleSelectSavedAccount(accountId, event) {
+      if (event) event.stopPropagation();
+      const accounts = getRememberedAccounts();
+      const account = accounts.find(a => a.id === accountId);
+      if (!account) return;
+
+      const rawPhone = account.mobileNumber || '';
+      const clean = String(rawPhone).replace(/\D/g, '').slice(-10);
+
+      if (!clean || clean.length !== 10) {
+        showOptionToast('Saved account does not have a valid 10-digit mobile number.');
+        return;
+      }
+
+      currentAuthMobile = clean;
+      currentAuthName = account.name || 'Customer';
+      currentAuthEmail = account.email || '';
+
+      const input = document.getElementById('authMobileInput');
+      if (input) input.value = clean;
+
+      showOptionToast(`Sending WhatsApp OTP to +91 ${clean}...`);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/customer/send-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mobileNumber: clean,
+            name: currentAuthName,
+            email: currentAuthEmail
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showOptionToast(data.error || 'Failed to send WhatsApp OTP.');
+          return;
+        }
+
+        const greetingEl = document.getElementById('authOtpGreeting');
+        if (greetingEl) {
+          greetingEl.innerHTML = `Welcome back, <strong>${escapeHtml(account.name || 'Customer')}</strong>! Enter the 6-digit WhatsApp OTP:`;
+        }
+        const badge = document.getElementById('authOtpPhoneBadge');
+        if (badge) badge.innerText = '+91 ' + clean;
+
+        goToAuthStep('otp');
+        showOptionToast('WhatsApp verification code sent!');
+      } catch (err) {
+        showOptionToast('Network error sending WhatsApp OTP.');
+      }
+    }
+
+    function updateCustomerDisplay(cust) {
+      const displayName = cust
+        ? `${cust.fullName || cust.name || 'Customer'} (${cust.mobileNumber || cust.phoneNumber || cust.email || ''})`
+        : 'Guest User';
+      const nameElMobile = document.getElementById('popoverCustomerName');
+      if (nameElMobile) nameElMobile.textContent = displayName;
+      const nameElPc = document.getElementById('popoverCustomerNamePc');
+      if (nameElPc) nameElPc.textContent = displayName;
+
+      const pcCustomerText = document.getElementById('pcCustomerProfileText');
+      if (pcCustomerText) {
+        if (!cust) {
+          pcCustomerText.textContent = 'Using as Guest User';
+          return;
+        }
+        const name = cust.fullName || cust.name || cust.customerName || '';
+        const phone = cust.mobileNumber || cust.phoneNumber || '';
+        const clean = phone ? String(phone).replace(/^\+91/, '').replace(/\D/g, '').slice(-10) : '';
+        if (name && clean) {
+          pcCustomerText.textContent = `Using as ${name} (+91 ${clean})`;
+        } else if (name) {
+          pcCustomerText.textContent = `Using as ${name}`;
+        } else {
+          pcCustomerText.textContent = 'Using as Guest User';
+        }
+      }
+    }
+
+    function toggleAccountMenu(e) {
+      if (e) { e.stopPropagation(); e.preventDefault(); }
+      const isPc = window.innerWidth > 768;
+      const popover = isPc
+        ? (document.getElementById('accountMenuPopoverPc') || document.getElementById('accountMenuPopover'))
+        : (document.getElementById('accountMenuPopover') || document.getElementById('accountMenuPopoverPc'));
+      if (!popover) return;
+
+      const isHidden = popover.hidden || popover.style.display === 'none' || popover.hasAttribute('hidden');
+      if (isHidden) {
+        popover.removeAttribute('hidden');
+        popover.hidden = false;
+        popover.style.display = 'block';
+        const dismissHandler = (evt) => {
+          if (!popover.contains(evt.target)) {
+            popover.setAttribute('hidden', '');
+            popover.hidden = true;
+            popover.style.display = 'none';
+            document.removeEventListener('click', dismissHandler);
+          }
+        };
+        setTimeout(() => document.addEventListener('click', dismissHandler), 10);
+      } else {
+        popover.setAttribute('hidden', '');
+        popover.hidden = true;
+        popover.style.display = 'none';
+      }
+    }
+
+    async function handleCustomerLogout() {
+      const popoverMobile = document.getElementById('accountMenuPopover');
+      if (popoverMobile) { popoverMobile.hidden = true; popoverMobile.style.display = 'none'; }
+      const popoverPc = document.getElementById('accountMenuPopoverPc');
+      if (popoverPc) { popoverPc.hidden = true; popoverPc.style.display = 'none'; }
+
+      if (activeToken) {
+        try {
+          await fetch(`${API_BASE}/api/v1/customer/logout`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${activeToken}` }
+          });
+        } catch { }
+      }
+
+      clearPreservedIdentity();
+      activeCustomer = null;
+      activeToken = null;
+      updateCustomerDisplay(null);
+      setGatewayAuthMode(true);
+      goToAuthStep('mobile');
+      renderSavedAccountsUI();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+    }
+
+    let currentSelectedMethod = 'UPI';
+
+    function hideAllContent() {
+      document.getElementById('viewUpiContent').hidden = true;
+      const vCod = document.getElementById('viewCodContent');
+      if (vCod) vCod.hidden = true;
+      const vCash = document.getElementById('viewCashContent');
+      if (vCash) vCash.hidden = true;
+      const vCard = document.getElementById('viewCardContent');
+      if (vCard) vCard.hidden = true;
+      document.getElementById('viewProcessingContent').hidden = true;
+      document.getElementById('viewSuccessContent').hidden = true;
+      document.getElementById('viewFailedContent').hidden = true;
+      document.getElementById('viewQueuedContent').hidden = true;
+      const vBlocked = document.getElementById('viewBlockedContent');
+      if (vBlocked) vBlocked.hidden = true;
+      const vDup = document.getElementById('viewDuplicateSessionContent');
+      if (vDup) vDup.hidden = true;
+    }
+
+    function formatTime(totalSec) {
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    let _activeCountdownTargetTime = null;
+
+    function runCountdown(seconds, onTick, onDone, targetExpiresAt) {
+      const targetTime = targetExpiresAt
+        ? new Date(targetExpiresAt).getTime()
+        : (_activeCountdownTargetTime || (Date.now() + (seconds || 300) * 1000));
+
+      if (countdownTimer && _activeCountdownTargetTime && Math.abs(_activeCountdownTargetTime - targetTime) <= 2500) {
+        return;
+      }
+
+      _activeCountdownTargetTime = targetTime;
+      if (countdownTimer) clearInterval(countdownTimer);
+
+      const calcRemaining = () => Math.max(0, Math.ceil((targetTime - Date.now()) / 1000));
+
+      const doTick = (sec) => {
+        onTick(sec);
+        document.querySelectorAll('.ypg-banner-running-timer').forEach(el => {
+          el.textContent = formatTime(sec);
+        });
+      };
+      doTick(calcRemaining());
+
+      countdownTimer = setInterval(() => {
+        const remaining = calcRemaining();
+        if (remaining <= 0) {
+          clearInterval(countdownTimer);
+          countdownTimer = null;
+          _activeCountdownTargetTime = null;
+          doTick(0);
+          if (onDone) onDone();
+        } else {
+          doTick(remaining);
+        }
+      }, 1000);
+    }
+
+    function renderMethodSelectorBar(data) {
+      const bar = document.getElementById('paymentMethodSelectorBar');
+      const sellingMode = data.sellingMode || 'ONLINE';
+      const enabledMethods = data.enabledMethods || ['UPI'];
+
+      const c = data.customer || activeCustomer;
+      if (c) {
+        const nameEl = document.getElementById('codCustomerName');
+        const phoneEl = document.getElementById('codCustomerPhone');
+        if (nameEl) nameEl.textContent = c.fullName || c.name || 'Customer';
+        if (phoneEl) phoneEl.textContent = c.phoneNumber || c.mobileNumber || '-';
+      }
+
+      if (bar) {
+        bar.style.display = (!enabledMethods || enabledMethods.length <= 1) ? 'none' : 'flex';
+      }
+
+      const tabUpi = document.getElementById('tabMethodUpi');
+      const tabCod = document.getElementById('tabMethodCod');
+      const tabCash = document.getElementById('tabMethodCash');
+      const tabCard = document.getElementById('tabMethodCard');
+
+      if (tabUpi) tabUpi.style.display = 'inline-flex';
+
+      const pcUpi = document.getElementById('pcMethodCardUpi');
+      const pcCod = document.getElementById('pcMethodCardCod');
+      const pcCash = document.getElementById('pcMethodCardCash');
+      const pcCard = document.getElementById('pcMethodCardCard');
+
+      if (pcUpi) pcUpi.style.display = 'block';
+
+      if (sellingMode === 'ONLINE') {
+        if (tabCod) tabCod.style.display = enabledMethods.includes('COD') ? 'inline-flex' : 'none';
+        if (tabCash) tabCash.style.display = 'none';
+        if (tabCard) tabCard.style.display = 'none';
+
+        if (pcCod) pcCod.style.display = enabledMethods.includes('COD') ? 'block' : 'none';
+        if (pcCash) pcCash.style.display = 'none';
+        if (pcCard) pcCard.style.display = 'none';
+      } else {
+        if (tabCod) tabCod.style.display = 'none';
+        if (tabCash) tabCash.style.display = enabledMethods.includes('CASH_COUNTER') ? 'inline-flex' : 'none';
+        if (tabCard) tabCard.style.display = enabledMethods.includes('CARD_COUNTER') ? 'inline-flex' : 'none';
+
+        if (pcCod) pcCod.style.display = 'none';
+        if (pcCash) pcCash.style.display = enabledMethods.includes('CASH_COUNTER') ? 'block' : 'none';
+        if (pcCard) pcCard.style.display = enabledMethods.includes('CARD_COUNTER') ? 'block' : 'none';
+      }
+
+      if (!enabledMethods.includes(currentSelectedMethod)) {
+        currentSelectedMethod = 'UPI';
+      }
+      updateMethodTabsUI(currentSelectedMethod);
+    }
+
+    function updateMethodTabsUI(method) {
+      const tabs = [
+        { id: 'tabMethodUpi', method: 'UPI' },
+        { id: 'tabMethodCod', method: 'COD' },
+        { id: 'tabMethodCash', method: 'CASH_COUNTER' },
+        { id: 'tabMethodCard', method: 'CARD_COUNTER' }
+      ];
+      tabs.forEach(t => {
+        const el = document.getElementById(t.id);
+        if (!el) return;
+        if (t.method === method) el.classList.add('active');
+        else el.classList.remove('active');
+      });
+
+      const pcCards = [
+        { id: 'pcMethodCardUpi', method: 'UPI' },
+        { id: 'pcMethodCardCod', method: 'COD' },
+        { id: 'pcMethodCardCash', method: 'CASH_COUNTER' },
+        { id: 'pcMethodCardCard', method: 'CARD_COUNTER' }
+      ];
+      pcCards.forEach(c => {
+        const el = document.getElementById(c.id);
+        if (!el) return;
+        if (c.method === method) el.classList.add('is-active');
+        else el.classList.remove('is-active');
+      });
+    }
+
+    function switchMethodFromDowntime() {
+      const enabled = state?.enabledMethods || state?.branding?.enabledPaymentMethods || [];
+      const sellingMode = state?.sellingMode || state?.branding?.sellingMode || 'OFFLINE';
+      if (sellingMode === 'ONLINE' && enabled.includes('COD')) {
+        selectPaymentMethod('COD');
+      } else if (enabled.includes('CASH_COUNTER')) {
+        selectPaymentMethod('CASH_COUNTER');
+      }
+    }
+
+    async function selectPaymentMethod(method) {
+      currentSelectedMethod = method;
+      updateMethodTabsUI(method);
+      hideAllContent();
+
+      if (method === 'UPI') {
+        document.getElementById('viewUpiContent').hidden = false;
+        document.getElementById('ypgStickyFooter').style.display = 'flex';
+      } else if (method === 'COD') {
+        const vCod = document.getElementById('viewCodContent');
+        if (vCod) vCod.hidden = false;
+        document.getElementById('ypgStickyFooter').style.display = 'none';
+      } else if (method === 'CASH_COUNTER') {
+        const vCash = document.getElementById('viewCashContent');
+        if (vCash) vCash.hidden = false;
+        document.getElementById('ypgStickyFooter').style.display = 'none';
+      } else if (method === 'CARD_COUNTER') {
+        const vCard = document.getElementById('viewCardContent');
+        if (vCard) vCard.hidden = false;
+        document.getElementById('ypgStickyFooter').style.display = 'none';
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/checkout/${PAYMENT_ID}/select-method`, {
+          method: 'POST',
+          headers: getApiHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ method, deviceId: DeviceIdentity?.currentDeviceId })
+        });
+        const resData = await res.json();
+        if (res.ok && resData) {
+          state.method = method;
+          if (resData.timeRemainingSeconds !== undefined) state.timeRemainingSeconds = resData.timeRemainingSeconds;
+          if (resData.status) state.status = resData.status;
+
+          if (method === 'COD') {
+            runCountdown(resData.timeRemainingSeconds || 300, sec => {
+              const el = document.getElementById('codTimerText');
+              if (el) el.textContent = formatTime(sec);
+            }, () => {
+              fetch(`${API_BASE}/api/v1/checkout/${PAYMENT_ID}/expire`, { method: 'POST' }).catch(() => { });
+              loadState();
+            });
+          } else if (method === 'UPI') {
+            if (resData.status === 'ACTIVE') {
+              loadQrSvg();
+              runCountdown(resData.timeRemainingSeconds || 300, sec => {
+                const el = document.getElementById('activeTimerText');
+                if (el) el.textContent = formatTime(sec);
+              }, () => {
+                fetch(`${API_BASE}/api/v1/checkout/${PAYMENT_ID}/expire`, { method: 'POST' }).catch(() => { });
+                loadState();
+              });
+            } else if (resData.status === 'QUEUED') {
+              loadState();
+            }
+          }
+        }
+      } catch (e) { }
+    }
+
+    async function promptConfirmCodOrder() {
+      const amt = state?.amount || '{{AMOUNT}}';
+      if (!confirm(`Confirm Cash on Delivery order for ₹${amt}? Pay in cash upon delivery.`)) {
+        return;
+      }
+      await executeConfirmCodOrder();
+    }
+
+    async function executeConfirmCodOrder() {
+      const btn = document.getElementById('btnConfirmCod');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Placing Order...';
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/checkout/${PAYMENT_ID}/confirm-cod`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (res.ok) {
+          loadState();
+        } else {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || 'Failed to place COD order');
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>Confirm Cash on Delivery (₹' + (state?.amount || '{{AMOUNT}}') + ')</span> &rsaquo;';
+          }
+        }
+      } catch (e) {
+        alert('Network error confirming COD order.');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>Confirm Cash on Delivery (₹' + (state?.amount || '{{AMOUNT}}') + ')</span> &rsaquo;';
+        }
+      }
+    }
+
+    const DeviceIdentity = {
+      dbName: 'coupi_device_keystore_v1',
+      storeName: 'keys',
+      currentDeviceId: null,
+      currentDeviceToken: null,
+
+      async openDb() {
+        return new Promise((resolve) => {
+          if (!window.indexedDB) { resolve(null); return; }
+          const req = window.indexedDB.open(this.dbName, 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(this.storeName)) {
+              db.createObjectStore(this.storeName, { keyPath: 'id' });
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+        });
+      },
+
+      async getStoredRecord() {
+        try {
+          const db = await this.openDb();
+          if (!db) return null;
+          return new Promise((resolve) => {
+            const tx = db.transaction(this.storeName, 'readonly');
+            const store = tx.objectStore(this.storeName);
+            const req = store.get('primary_device');
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+          });
+        } catch { return null; }
+      },
+
+      async saveRecord(record) {
+        try {
+          const db = await this.openDb();
+          if (!db) return;
+          return new Promise((resolve) => {
+            const tx = db.transaction(this.storeName, 'readwrite');
+            const store = tx.objectStore(this.storeName);
+            store.put({ id: 'primary_device', ...record });
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+          });
+        } catch {}
+      },
+
+      collectSignals() {
+        return {
+          userAgent: navigator.userAgent || '',
+          platform: navigator.platform || '',
+          language: navigator.language || '',
+          timezone: (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : '',
+          screenSignature: `${window.screen?.width || 0}x${window.screen?.height || 0}x${window.screen?.colorDepth || 24}`
+        };
+      },
+
+      async getOrRegister() {
+        if (this.currentDeviceId) {
+          return { deviceId: this.currentDeviceId, deviceToken: this.currentDeviceToken };
+        }
+        let cachedId = localStorage.getItem('ypg_device_id');
+        let cachedToken = localStorage.getItem('ypg_device_token');
+
+        const stored = await this.getStoredRecord();
+        if (stored?.deviceId) {
+          this.currentDeviceId = stored.deviceId;
+          this.currentDeviceToken = stored.deviceToken;
+          localStorage.setItem('ypg_device_id', stored.deviceId);
+          if (stored.deviceToken) localStorage.setItem('ypg_device_token', stored.deviceToken);
+          return { deviceId: stored.deviceId, deviceToken: stored.deviceToken };
+        }
+
+        if (cachedId) {
+          this.currentDeviceId = cachedId;
+          this.currentDeviceToken = cachedToken;
+          return { deviceId: cachedId, deviceToken: cachedToken };
+        }
+
+        const publicKeyBase64 = btoa(`device-key-${Math.random()}-${Date.now()}`);
+        const signals = this.collectSignals();
+        try {
+          const resp = await fetch(`${API_BASE}/api/v1/devices/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ publicKey: publicKeyBase64, signals })
+          });
+          const data = await resp.json();
+          if (data?.deviceId) {
+            this.currentDeviceId = data.deviceId;
+            this.currentDeviceToken = data.deviceToken;
+            localStorage.setItem('ypg_device_id', data.deviceId);
+            if (data.deviceToken) localStorage.setItem('ypg_device_token', data.deviceToken);
+            await this.saveRecord({
+              deviceId: data.deviceId,
+              deviceToken: data.deviceToken,
+              publicKeyBase64,
+              registeredAt: new Date().toISOString()
+            });
+            return { deviceId: data.deviceId, deviceToken: data.deviceToken };
+          }
+        } catch (err) { }
+        return { deviceId: null, deviceToken: null };
+      }
+    };
+
+    function getApiHeaders(customHeaders = {}) {
+      const headers = { ...customHeaders };
+      if (typeof DeviceIdentity !== 'undefined' && DeviceIdentity?.currentDeviceId) {
+        headers['X-Device-Id'] = DeviceIdentity.currentDeviceId;
+      }
+      if (typeof DeviceIdentity !== 'undefined' && DeviceIdentity?.currentDeviceToken) {
+        headers['X-Device-Token'] = DeviceIdentity.currentDeviceToken;
+      }
+      const token = activeToken || (getPreservedIdentity()?.token) || localStorage.getItem('ypg_customer_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['x-customer-token'] = token;
+      }
+      return headers;
+    }
+
+    async function loadState() {
+      try {
+        await DeviceIdentity.getOrRegister();
+        const headers = getApiHeaders();
+
+        const res = await fetch(`${API_BASE}/api/v1/checkout/${PAYMENT_ID}/state`, { headers });
+        const data = await res.json().catch(() => ({}));
+
+        if (res.status === 409 || data.error === 'DUPLICATE_SESSION_DETECTED') {
+          renderDuplicateSession(data);
+          dismissSplashScreen();
+          return;
+        }
+
+        if (!res.ok) {
+          dismissSplashScreen();
+          return;
+        }
+
+        renderState(data);
+        dismissSplashScreen();
+      } catch (e) {
+        dismissSplashScreen();
+      }
+    }
+
+    function renderState(data) {
+      state = data;
+      const b = data.branding || {};
+      const appName = b.appName || 'CouPI';
+      const merchantName = data.merchantName || 'Merchant Checkout';
+
+      document.title = `${merchantName} · ${appName}`;
+
+      if (data.merchantName) {
+        const nameEl = document.getElementById('headerMerchantName');
+        if (nameEl) nameEl.textContent = data.merchantName;
+        const letterEl = document.getElementById('merchantAvatarLetter');
+        if (letterEl) letterEl.textContent = data.merchantName.charAt(0).toUpperCase();
+        const pcMerchant = document.getElementById('pcMerchantName');
+        if (pcMerchant) pcMerchant.textContent = data.merchantName;
+      }
+
+      const pcPrice = document.getElementById('pcPriceSummaryAmount');
+      if (pcPrice && data.amount) pcPrice.textContent = `₹${data.amount}`;
+
+      const pcLogoImg = document.getElementById('pcMerchantAvatarImg');
+      const pcLetterSpan = document.getElementById('pcMerchantAvatarLetter');
+      if (b.logoUrl) {
+        if (pcLogoImg) { pcLogoImg.src = b.logoUrl; pcLogoImg.style.display = 'block'; }
+        if (pcLetterSpan) pcLetterSpan.style.display = 'none';
+      } else {
+        if (pcLogoImg) pcLogoImg.style.display = 'none';
+        if (pcLetterSpan) {
+          pcLetterSpan.style.display = 'block';
+          pcLetterSpan.textContent = (data.merchantName || 'M').charAt(0).toUpperCase();
+        }
+      }
+
+      const pcCustomerText = document.getElementById('pcCustomerProfileText');
+      if (pcCustomerText) {
+        const c = data.customer || activeCustomer || (getPreservedIdentity()?.customer);
+        if (c) {
+          const name = c.fullName || c.name || '';
+          const mobile = c.mobileNumber || c.phoneNumber || '';
+          const clean = mobile ? String(mobile).replace(/^\+91/, '').replace(/\D/g, '').slice(-10) : '';
+          pcCustomerText.textContent = (name && clean) ? `Using as ${name} (+91 ${clean})` : (name ? `Using as ${name}` : 'Using as Guest User');
+        } else {
+          pcCustomerText.textContent = 'Using as Guest User';
+        }
+      }
+
+      document.querySelectorAll('.cancelMerchantNameSpan').forEach(el => {
+        el.textContent = data.merchantName || 'Merchant';
+      });
+
+      // Health
+      const serverIndicator = data.upiServerIndicator || { status: 'WORKING', tier: 'GREEN', label: 'Server Is Working' };
+      const healthPill = document.getElementById('upiServerHealthIndicator');
+      const healthLabel = document.getElementById('serverStatusLabel');
+      const downtimeAlert = document.getElementById('serverDowntimeAlert');
+      const downtimeHeading = document.querySelector('#serverDowntimeAlert .ypg-downtime-heading');
+      const downtimeMsg = document.getElementById('serverDowntimeMsg');
+      const btnCashAlt = document.getElementById('btnDowntimeCashAlt');
+
+      const tier = serverIndicator.tier || (serverIndicator.status === 'WORKING' ? 'GREEN' : (serverIndicator.status === 'BUSY' ? 'YELLOW' : 'RED'));
+
+      if (healthPill) {
+        healthPill.className = tier === 'GREEN' ? 'ypg-server-health-indicator is-working' : (tier === 'YELLOW' ? 'ypg-server-health-indicator is-busy' : 'ypg-server-health-indicator is-issues');
+      }
+      if (healthLabel) {
+        healthLabel.textContent = serverIndicator.label || (tier === 'GREEN' ? 'Server Is Working' : (tier === 'YELLOW' ? 'UPI Server Busy' : 'Server Facing Issues'));
+      }
+      if (downtimeAlert) {
+        if (tier === 'GREEN') {
+          downtimeAlert.style.display = 'none';
+        } else {
+          downtimeAlert.style.display = 'flex';
+          if (downtimeHeading) downtimeHeading.textContent = tier === 'YELLOW' ? 'UPI Server Busy' : 'UPI Server Facing Issues';
+          if (downtimeMsg) downtimeMsg.textContent = serverIndicator.warning || 'Your payment may go through extra processing seconds.';
+          if (btnCashAlt) btnCashAlt.style.display = (serverIndicator.recommendedAlternative === 'CASH') ? 'inline-block' : 'none';
+        }
+      }
+
+      // Amounts
+      if (data.amount) {
+        const formatted = `₹${data.amount}`;
+        const bAmt = document.getElementById('bottomAmountDisplay');
+        if (bAmt) bAmt.textContent = formatted;
+        const dAmt = document.getElementById('drawerTotalAmount');
+        if (dAmt) dAmt.textContent = formatted;
+        const sAmt = document.getElementById('successAmountVal');
+        if (sAmt) sAmt.textContent = formatted;
+      }
+      if (data.orderId || data.id) {
+        const oId = data.orderId || data.id;
+        const dOrder = document.getElementById('drawerOrderId');
+        if (dOrder) dOrder.textContent = oId;
+        const formattedOId = String(oId).startsWith('#') ? oId : `#${oId}`;
+        document.querySelectorAll('.cashierOrderIdDisplay').forEach(el => {
+          el.textContent = formattedOId;
+        });
+      }
+
+      // Counter Notices
+      const cashNoticeEl = document.getElementById('cashCounterDeskNotice');
+      if (cashNoticeEl && b.counterInstructions) cashNoticeEl.textContent = b.counterInstructions;
+      const cardNoticeEl = document.getElementById('cardCounterDeskNotice');
+      if (cardNoticeEl && b.cardCounterInstructions) cardNoticeEl.textContent = b.cardCounterInstructions;
+
+      // Conflict Modal
+      const conflictModal = document.getElementById('activeConflictModal');
+      if (data.hasActiveSessionConflict) {
+        hideAllContent();
+        if (conflictModal) conflictModal.hidden = false;
+        if (data.conflictingSession?.id) activeConflictSessionId = data.conflictingSession.id;
+        if (queuePollTimer) { clearInterval(queuePollTimer); queuePollTimer = null; }
+        if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+        return;
+      } else if (conflictModal) {
+        conflictModal.hidden = true;
+      }
+
+      // Terminal States
+      if (['SUCCESS', 'CANCELLED', 'EXPIRED', 'FAILED'].includes(data.status)) {
+        if (queuePollTimer) { clearInterval(queuePollTimer); queuePollTimer = null; }
+        if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+        setGatewayAuthMode(false);
+
+        if (data.status === 'CANCELLED') {
+          closeProcessingModal();
+          closeCancelPaymentModal();
+          hideAllContent();
+          const failedView = document.getElementById('viewFailedContent');
+          if (failedView) failedView.hidden = false;
+          const footer = document.getElementById('ypgStickyFooter');
+          if (footer) footer.style.display = 'none';
+
+          const titleEl = document.getElementById('failedTitleText');
+          if (titleEl) titleEl.textContent = 'Payment Cancelled';
+          const descEl = document.getElementById('failedDescriptionText');
+          if (descEl) descEl.textContent = 'You cancelled this payment session. Return to the store.';
+          const btnAction = document.getElementById('btnFailedAction');
+          if (btnAction) {
+            btnAction.textContent = 'Back to Store';
+            btnAction.onclick = () => {
+              const storeUrl = getStoreReturnUrl();
+              window.location.href = storeUrl;
+            };
+          }
+          return;
+        }
+
+        if (data.status === 'FAILED' || data.status === 'EXPIRED') {
+          closeProcessingModal();
+          closeCancelPaymentModal();
+          hideAllContent();
+          const failedView = document.getElementById('viewFailedContent');
+          if (failedView) failedView.hidden = false;
+          const footer = document.getElementById('ypgStickyFooter');
+          if (footer) footer.style.display = 'none';
+
+          const isExpired = data.status === 'EXPIRED';
+          const titleEl = document.getElementById('failedTitleText');
+          if (titleEl) titleEl.textContent = isExpired ? 'Payment Session Expired' : 'Payment Not Confirmed';
+          const descEl = document.getElementById('failedDescriptionText');
+          if (descEl) {
+            descEl.textContent = isExpired
+              ? 'The 5-minute active payment window elapsed before verification was completed.'
+              : 'No matching UPI bank confirmation was detected.';
+          }
+          const btnAction = document.getElementById('btnFailedAction');
+          if (btnAction) {
+            btnAction.textContent = isExpired ? 'Start New Payment' : 'Try Again';
+            btnAction.onclick = () => handleRetryNewPayment();
+          }
+          return;
+        }
+
+        if (data.status === 'SUCCESS') {
+          closeProcessingModal();
+          closeCancelPaymentModal();
+          hideAllContent();
+          const successView = document.getElementById('viewSuccessContent');
+          if (successView) successView.hidden = false;
+          const footer = document.getElementById('ypgStickyFooter');
+          if (footer) footer.style.display = 'none';
+
+          const titleEl = document.getElementById('successTitleText');
+          const isCodOrder = data.method === 'COD' || data.verificationTag === 'COD_ORDER_PLACED';
+          if (isCodOrder && titleEl) titleEl.textContent = 'Order Placed (Cash on Delivery)!';
+
+          try {
+            window.parent.postMessage({ event: 'coupi.payment_success', data }, '*');
+          } catch (e) { }
+
+          const btnReturn = document.getElementById('btnReturnStore');
+          if (btnReturn && data.returnUrl) {
+            btnReturn.hidden = false;
+            btnReturn.href = data.returnUrl;
+            if (window.parent === window) {
+              setTimeout(() => { window.location.href = data.returnUrl; }, 2000);
+            }
+          }
+          return;
+        }
+      }
+
+      renderMethodSelectorBar(data);
+
+      if (data.customer) activeCustomer = data.customer;
+      else if (!activeCustomer) {
+        const preserved = getPreservedIdentity();
+        if (preserved?.customer) {
+          activeCustomer = preserved.customer;
+          activeToken = preserved.token || activeToken;
+        }
+      }
+
+      const hasCustomer = Boolean(data.customer || activeCustomer);
+      if (!hasCustomer) {
+        setGatewayAuthMode(true);
+        goToAuthStep('mobile');
+        renderSavedAccountsUI();
+        return;
+      }
+
+      if (activeCustomer) updateCustomerDisplay(activeCustomer);
+      setGatewayAuthMode(false);
+
+      if (data.status === 'BLOCKED' || data.isBanned || data.fraudDetected) {
+        renderBlockedState(data);
+        return;
+      }
+
+      if (data.status === 'QUEUED') {
+        hideAllContent();
+        document.getElementById('viewQueuedContent').hidden = false;
+        document.getElementById('ypgStickyFooter').style.display = 'none';
+        document.getElementById('queueNumberDisplay').textContent = `#${data.queuePosition || 1}`;
+        runCountdown(data.timeRemainingSeconds, sec => {
+          document.getElementById('queueTimerText').textContent = formatTime(sec);
+        }, () => loadState());
+        if (!queuePollTimer) queuePollTimer = setInterval(loadState, 1200);
+        return;
+      }
+
+      if (queuePollTimer) { clearInterval(queuePollTimer); queuePollTimer = null; }
+
+      if (data.status === 'ACTIVE' || (data.status === 'INITIATED' && (data.timeRemainingSeconds > 0 || data.expiresAt))) {
+        hideAllContent();
+        if (currentSelectedMethod === 'COD') {
+          const vCod = document.getElementById('viewCodContent');
+          if (vCod) vCod.hidden = false;
+          document.getElementById('ypgStickyFooter').style.display = 'none';
+          runCountdown(data.timeRemainingSeconds || 300, sec => {
+            const el = document.getElementById('codTimerText');
+            if (el) el.textContent = formatTime(sec);
+          }, () => loadState(), data.expiresAt);
+        } else if (currentSelectedMethod === 'CASH_COUNTER') {
+          const vCash = document.getElementById('viewCashContent');
+          if (vCash) vCash.hidden = false;
+          document.getElementById('ypgStickyFooter').style.display = 'none';
+        } else if (currentSelectedMethod === 'CARD_COUNTER') {
+          const vCard = document.getElementById('viewCardContent');
+          if (vCard) vCard.hidden = false;
+          document.getElementById('ypgStickyFooter').style.display = 'none';
+        } else {
+          document.getElementById('viewUpiContent').hidden = false;
+          document.getElementById('ypgStickyFooter').style.display = 'flex';
+          loadQrSvg();
+
+          const btnContinue = document.getElementById('btnContinuePayment');
+          const remainingSec = (data.timeRemainingSeconds !== undefined && data.timeRemainingSeconds !== null) ? Number(data.timeRemainingSeconds) : 300;
+          const targetExpiry = data.expiresAt || new Date(Date.now() + remainingSec * 1000).toISOString();
+
+          runCountdown(remainingSec, sec => {
+            const tText = document.getElementById('activeTimerText');
+            if (tText) tText.textContent = formatTime(sec);
+            if (sec <= 240 && btnContinue) btnContinue.style.display = 'block';
+            else if (btnContinue) btnContinue.style.display = 'none';
+          }, () => {
+            closeProcessingModal();
+            fetch(`${API_BASE}/api/v1/checkout/${PAYMENT_ID}/expire`, { method: 'POST' }).catch(() => { });
+            loadState();
+          }, targetExpiry);
+        }
+        return;
+      }
+
+      if (data.status === 'PROCESSING') {
+        hideAllContent();
+        document.getElementById('viewProcessingContent').hidden = false;
+        document.getElementById('ypgStickyFooter').style.display = 'none';
+        runCountdown(data.timeRemainingSeconds, sec => {
+          document.getElementById('procTimerText').textContent = `${sec}s`;
+        }, () => loadState(), data.expiresAt);
+        return;
+      }
+    }
+
+    async function loadQrSvg() {
+      const container = document.getElementById('qrImageContainer');
+      if (!container) return;
+      try {
+        const res = await fetch(`/checkout/${PAYMENT_ID}/qr.svg`);
+        if (res.ok) {
+          const svg = await res.text();
+          if (svg && svg.includes('<svg')) {
+            container.innerHTML = svg;
+            return;
+          }
+        }
+      } catch (e) { }
+    }
+
+    function openProcessingModal(title = 'Verifying Payment', subtitle = 'Observing banking push socket...') {
+      const modal = document.getElementById('rzpProcessingModal');
+      const tEl = document.getElementById('rzpProcessingTitle');
+      const sEl = document.getElementById('rzpProcessingSubtitle');
+      if (tEl) tEl.textContent = title;
+      if (sEl) sEl.textContent = subtitle;
+      if (modal) modal.hidden = false;
+    }
+
+    function closeProcessingModal() {
+      const modal = document.getElementById('rzpProcessingModal');
+      if (modal) modal.hidden = true;
+    }
+
+    function openCancelPaymentModal() {
+      emitTriggerHook('CANCEL_CLICKED');
+      const modal = document.getElementById('rzpCancelModal');
+      const promptView = document.getElementById('rzpCancelPromptView');
+      const progressView = document.getElementById('rzpCancellingProgressView');
+      if (promptView) promptView.style.display = 'block';
+      if (progressView) progressView.style.display = 'none';
+      if (modal) modal.hidden = false;
+    }
+
+    function closeCancelPaymentModal() {
+      const modal = document.getElementById('rzpCancelModal');
+      if (modal) modal.hidden = true;
+    }
+
+    async function confirmCancelPayment() {
+      emitTriggerHook('CANCEL_CONFIRMED');
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+      if (queuePollTimer) { clearInterval(queuePollTimer); queuePollTimer = null; }
+
+      const promptView = document.getElementById('rzpCancelPromptView');
+      const progressView = document.getElementById('rzpCancellingProgressView');
+      if (promptView) promptView.style.display = 'none';
+      if (progressView) progressView.style.display = 'block';
+
+      try {
+        await fetch(`${API_BASE}/api/v1/checkout/${PAYMENT_ID}/cancel`, {
+          method: 'POST',
+          headers: getApiHeaders()
+        });
+      } catch (e) { }
+
+      setTimeout(() => {
+        closeCancelPaymentModal();
+        closeProcessingModal();
+        const storeUrl = getStoreReturnUrl();
+        const isEmbedded = (window.parent && window.parent !== window) || location.search.includes('embedded=1');
+        if (isEmbedded) {
+          try {
+            window.parent.postMessage({ event: 'coupi.modal_close', redirectUrl: storeUrl }, '*');
+            window.parent.postMessage({ event: 'coupi.payment_cancelled', redirectUrl: storeUrl }, '*');
+          } catch (e) { }
+        }
+        loadState();
+      }, 400);
+    }
+
+    function cancelPayment() {
+      openCancelPaymentModal();
+    }
+
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.event === 'coupi.request_cancel') {
+        openCancelPaymentModal();
+      }
+    });
+
+    async function submitPaymentDone() {
+      openProcessingModal('Verifying Payment', 'Observing RFC 2177 banking socket...');
+      emitTriggerHook('PAYMENT_DONE_CLICKED');
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/checkout/${PAYMENT_ID}/payment-done`, { method: 'POST' });
+        if (res.ok) loadState();
+      } catch (e) { }
+    }
+
+    let activeConflictSessionId = null;
+
+    async function executeRetryNewPayment() {
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (DeviceIdentity?.currentDeviceId) headers['X-Device-Id'] = DeviceIdentity.currentDeviceId;
+        if (DeviceIdentity?.currentDeviceToken) headers['X-Device-Token'] = DeviceIdentity.currentDeviceToken;
+        const token = activeToken || localStorage.getItem('ypg_customer_token');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${API_BASE}/api/v1/checkout/${PAYMENT_ID}/retry-new-payment`, {
+          method: 'POST',
+          headers
+        });
+        if (res.ok) {
+          const conflictModal = document.getElementById('activeConflictModal');
+          if (conflictModal) conflictModal.hidden = true;
+          await loadState();
+        }
+      } catch (e) { }
+    }
+
+    function continueExistingActivePayment() {
+      if (activeConflictSessionId) {
+        window.location.href = `/checkout/${activeConflictSessionId}`;
+      } else {
+        const conflictModal = document.getElementById('activeConflictModal');
+        if (conflictModal) conflictModal.hidden = true;
+        loadState();
+      }
+    }
+
+    function renderBlockedState(data) {
+      closeProcessingModal();
+      closeCancelPaymentModal();
+      hideAllContent();
+      const vBlocked = document.getElementById('viewBlockedContent');
+      if (vBlocked) vBlocked.hidden = false;
+      const footer = document.getElementById('ypgStickyFooter');
+      if (footer) footer.style.display = 'none';
+
+      const orderRef = data.orderId || state?.orderId || 'N/A';
+      const orderEl = document.getElementById('blockedOrderRefVal');
+      if (orderEl) orderEl.textContent = `#${orderRef}`;
+      const sessEl = document.getElementById('blockedSessionIdVal');
+      if (sessEl) sessEl.textContent = data.id || PAYMENT_ID || 'N/A';
+      const timeEl = document.getElementById('blockedTimestampVal');
+      if (timeEl) timeEl.textContent = new Date().toLocaleTimeString();
+    }
+
+    function handleBlockedExit() {
+      const failRedirectUrl = getFailedRedirectUrl();
+      window.location.href = failRedirectUrl;
+    }
+
+    function renderDuplicateSession(data) {
+      hideAllContent();
+      const vDup = document.getElementById('viewDuplicateSessionContent');
+      if (vDup) vDup.hidden = false;
+      const footer = document.getElementById('ypgStickyFooter');
+      if (footer) footer.style.display = 'none';
+    }
+
+    async function handleEndAndStartNewPayment() {
+      const btn = document.getElementById('btnEndAndRestartPayment');
+      if (btn) btn.disabled = true;
+      try {
+        await DeviceIdentity.getOrRegister();
+        const headers = { 'Content-Type': 'application/json' };
+        if (DeviceIdentity.currentDeviceId) headers['X-Device-Id'] = DeviceIdentity.currentDeviceId;
+        if (DeviceIdentity.currentDeviceToken) headers['X-Device-Token'] = DeviceIdentity.currentDeviceToken;
+
+        const res = await fetch(`${API_BASE}/api/v1/checkout/${PAYMENT_ID}/end-and-restart-payment`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ deviceId: DeviceIdentity.currentDeviceId })
+        });
+        const data = await res.json();
+        if (data.success && (data.checkoutUrl || data.newSessionId)) {
+          window.location.href = data.checkoutUrl || `/checkout/${data.newSessionId}`;
+        }
+      } catch (err) { }
+    }
+
+    function connectSse() {
+      if (sse) {
+        try { sse.close(); } catch (e) { }
+        sse = null;
+      }
+      try {
+        const streamUrl = `${API_BASE}/api/v1/checkout/${PAYMENT_ID}/stream`;
+        sse = new EventSource(streamUrl);
+        const handlePayload = () => loadState();
+        sse.onmessage = handlePayload;
+        sse.addEventListener('status_change', handlePayload);
+        sse.addEventListener('state_change', handlePayload);
+        sse.addEventListener('payment_success', handlePayload);
+        sse.addEventListener('counter_payment_confirmed', handlePayload);
+        sse.addEventListener('counter_payment_declined', handlePayload);
+        sse.onerror = () => {
+          if (sse) { try { sse.close(); } catch(e){} sse = null; }
+          setTimeout(connectSse, 3000);
+        };
+      } catch (e) {
+        setTimeout(connectSse, 3000);
+      }
+    }
+
+    setInterval(() => {
+      if (state && (state.status === 'SUCCESS' || state.status === 'FAILED' || state.status === 'EXPIRED' || state.status === 'BLOCKED')) return;
+      loadState();
+    }, 2000);
+
+    function openHelpModal() {
+      document.getElementById('helpModal').hidden = false;
+      const branding = state?.branding || {};
+      const emailBox = document.getElementById('helpModalEmailsContainer');
+      const phoneBox = document.getElementById('helpModalMobilesContainer');
+      const caseBox = document.getElementById('helpModalCaseInfoText');
+
+      if (emailBox) emailBox.innerHTML = `<strong>Email:</strong> ${branding.supportEmail || 'support@merchant.in'}`;
+      if (phoneBox) phoneBox.innerHTML = `<strong>Phone:</strong> ${branding.supportMobile || '+91 80 4000 0000'}`;
+      if (caseBox) {
+        caseBox.textContent = `PAYMENT_ID: ${PAYMENT_ID}\nORDER_REF: ${state?.orderId || 'N/A'}\nAMOUNT: ₹${state?.amount || 'N/A'}\nSTATUS: ${state?.status || 'N/A'}`;
+      }
+    }
+
+    function closeHelpModal() {
+      document.getElementById('helpModal').hidden = true;
+    }
+
+    function copyCaseInfo() {
+      const text = document.getElementById('helpModalCaseInfoText').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        document.getElementById('copyCaseText').textContent = 'Copied!';
+        setTimeout(() => { document.getElementById('copyCaseText').textContent = 'Copy Details'; }, 2000);
+      });
+    }
+
+    const mobIn = document.getElementById('authMobileInput');
+    if (mobIn) {
+      mobIn.addEventListener('input', (e) => {
+        const clean = e.target.value.replace(/\D/g, '').slice(0, 10);
+        if (e.target.value !== clean) e.target.value = clean;
+        currentAuthMobile = clean;
+      });
+      mobIn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); handleAuthMobileSubmit(); }
+      });
+    }
+
+    const nameIn = document.getElementById('authSignupName');
+    const emailIn = document.getElementById('authSignupEmail');
+    if (nameIn) {
+      nameIn.addEventListener('input', (e) => { currentAuthName = e.target.value; });
+      nameIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); emailIn?.focus(); } });
+    }
+    if (emailIn) {
+      emailIn.addEventListener('input', (e) => { currentAuthEmail = e.target.value; });
+      emailIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleAuthSignupSubmit(); } });
+    }
+
+    const otpIn = document.getElementById('authOtpInput');
+    if (otpIn) {
+      otpIn.addEventListener('input', (e) => {
+        const val = e.target.value.replace(/\D/g, '');
+        e.target.value = val;
+        if (val.length === 6) handleAuthVerifyOtpSubmit();
+      });
+      otpIn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); handleAuthVerifyOtpSubmit(); }
+      });
+    }
+
+    try {
+      const initEl = document.getElementById('ypgInitialState');
+      if (initEl && initEl.textContent && initEl.textContent.trim()) {
+        const parsed = JSON.parse(initEl.textContent);
+        if (parsed && (parsed.amount || parsed.branding || parsed.merchantName)) {
+          renderState(parsed);
+        }
+      }
+    } catch (e) { }
+
+    loadState();
+    connectSse();
+  </script>
+</body>
+
+</html>
