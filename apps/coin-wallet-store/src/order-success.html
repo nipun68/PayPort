@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Successful · CouPI Foundation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-canvas: #F4F1EA;
+      --bg-docket: #FDFBF7;
+      --bg-white: #FFFFFF;
+      --ink-primary: #16181B;
+      --ink-secondary: #525966;
+      --border-hairline: #E5DFD3;
+      --border-strong: #CDC5B4;
+      --tone-green: #1A5438;
+      --tone-green-wash: #EDF5F0;
+      --tone-navy: #14233C;
+      --font-serif: 'Cinzel', Georgia, serif;
+      --font-sans: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-canvas);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .docket-result-card {
+      background: var(--bg-docket);
+      border: 1px solid var(--border-strong);
+      border-top: 3px solid var(--tone-green);
+      max-width: 540px;
+      width: 100%;
+      padding: 36px 30px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+      text-align: center;
+    }
+
+    .status-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      background: var(--tone-green-wash);
+      color: var(--tone-green);
+      border: 1px solid #B7D9C6;
+      margin-bottom: 16px;
+    }
+
+    .result-title {
+      font-family: var(--font-serif);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--tone-green);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .result-subtitle {
+      font-size: 13.5px;
+      color: var(--ink-secondary);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    .amount-display {
+      font-family: var(--font-mono);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--ink-primary);
+      margin-bottom: 20px;
+    }
+
+    .evidence-block {
+      background: var(--bg-white);
+      border: 1px solid var(--border-hairline);
+      padding: 14px 16px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      text-align: left;
+      margin-bottom: 24px;
+      color: var(--ink-secondary);
+    }
+    .evidence-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px dotted var(--border-hairline);
+    }
+    .evidence-row:last-child {
+      border-bottom: none;
+    }
+    .evidence-row span.val {
+      font-weight: 600;
+      color: var(--ink-primary);
+    }
+
+    .btn-action-primary {
+      display: block;
+      width: 100%;
+      background: var(--tone-navy);
+      color: #FAF8F5;
+      border: 1px solid var(--tone-navy);
+      padding: 12px 18px;
+      font-family: var(--font-serif);
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: background 0.15s ease;
+    }
+    .btn-action-primary:hover {
+      background: #0D192C;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="docket-result-card">
+    <div class="status-badge">VERIFIED BY COUPI PG</div>
+    <h1 class="result-title">Payment Successful!</h1>
+    <p class="result-subtitle">
+      Direct banking credit authoritatively verified by RFC 2177 push socket. Your order has been marked paid.
+    </p>
+
+    <div class="amount-display">₹{{AMOUNT}}</div>
+
+    <div class="evidence-block">
+      <div class="evidence-row">
+        <span>Order Reference</span>
+        <span class="val">{{ORDER_ID}}</span>
+      </div>
+      <div class="evidence-row">
+        <span>Bank Reference (UTR)</span>
+        <span class="val">{{UTR}}</span>
+      </div>
+      <div class="evidence-row">
+        <span>Settlement Mode</span>
+        <span class="val">DIRECT UPI</span>
+      </div>
+      <div class="evidence-row">
+        <span>Banking Observer</span>
+        <span class="val" style="color:var(--tone-green);">RFC 2177 IDLE CONFIRMED</span>
+      </div>
+    </div>
+
+    <a href="/wallet" class="btn-action-primary">View Customer Vault &rsaquo;</a>
+  </div>
+
+</body>
+</html>
