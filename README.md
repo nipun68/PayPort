@@ -36,7 +36,6 @@
   <a href="#-multi-vpa-auto-rotation--daily-limit-guard">Multi-VPA Guard</a> •
   <a href="#-developer-integration-web-node--flutter">Developer Integration</a> •
   <a href="#-authoritative-server-to-server-webhooks">Webhooks</a> •
-  <a href="#-interviewer--system-design-qa-cheat-sheet">Interview Q&A</a> •
   <a href="#-quickstart-in-60-seconds">Quickstart</a>
 </p>
 
@@ -455,31 +454,6 @@ def verify_webhook(raw_body: bytes, signature_header: str, secret: str) -> bool:
     expected = "sha256=" + hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(signature_header, expected)
 ```
-
----
-
-<br/>
-
-## 🧠 Interviewer & System Design Q&A (Cheat Sheet)
-
-If presenting this project in a Technical or System Design Interview, here are the architectural design decisions and talking points:
-
-### Q1: "How do you handle duplicate bank notifications and prevent double credit?"
-> **Answer**: At the database level, the `observations` and `payment_sessions` tables enforce a strict `UNIQUE(utr)` constraint. When an IMAP push arrives, the extraction pipeline checks if the UTR already exists in an atomic Write-Ahead Log (WAL) transaction. If present, the duplicate observation is ignored and logged in `audit_logs`. Additionally, client requests require an `Idempotency-Key` header with SHA-256 caching.
-
-### Q2: "What happens if two users pay the same amount at the exact same second?"
-> **Answer**: This is solved by the **Paise Offset Engine**. When Session A is created for ₹500, it receives offset `₹0.00` (User pays ₹500.00). When Session B arrives concurrently, an atomic compare-and-swap lock allocates the next free offset `₹0.01` (User pays ₹500.01). When the bank email reports a credit of ₹500.01, attribution is mathematically deterministic. The customer difference is at most pennies and can be credited to customer wallet points or absorbed as a promotion.
-
-### Q3: "What if the IMAP connection drops or Gmail rate-limits the socket?"
-> **Answer**: PayPort uses persistent RFC 2177 TLS sockets with an automatic exponential backoff auto-reconnect loop. If the socket drops, it reconnects within 1,000ms. In addition, PayPort maintains a fallback periodic polling loop every 5,000ms to catch any notifications missed during a network partition.
-
-### Q4: "Why not use Webhooks directly from Banks instead of IMAP?"
-> **Answer**: Direct corporate bank webhook APIs (e.g. ICICI Smart Collect, Yes Bank) require corporate current accounts, enterprise banking contracts, and static IP whitelisting. PayPort provides a **2-Tier Architecture**:
-> - **Tier 1 (P2P UPI + IMAP)**: Zero setup, zero bank paperwork, 0% fees for any individual or startup with standard net banking.
-> - **Tier 2 (Hybrid Router)**: Upgrades high-ticket orders (>₹2,000) to Direct Bank Smart Collect at flat ₹1/txn once the merchant has enterprise corporate banking.
-
-### Q5: "How is the Decoupled Dual-Timer state machine structured?"
-> **Answer**: The checkout interface gives the user an active window of **300 seconds (5 minutes)** to complete the payment in their UPI app. However, bank notification delivery over cellular networks may occasionally lag. PayPort decouples the customer presentation timer from the server reconciliation timer: if a notification arrives within an extended **30-minute grace window**, the system reconciles the payment and fires the webhook rather than dropping funds.
 
 ---
 
